@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -23,7 +24,7 @@ main{width:min(1120px,calc(100% - 32px));margin:48px auto 64px;display:grid;grid
 .middle{display:flex;justify-content:center;margin:-2px 0}.reverse{border:2px solid var(--yellow);color:var(--yellow);background:#262650;border-radius:50%;height:43px;width:43px;font-size:24px}
 .fee{display:flex;justify-content:space-between;align-items:center;color:#c9d2eb;font-size:13px;margin:18px 2px}.fee strong{color:#ffe06a;font-size:18px}.swap-action{width:100%;padding:16px;background:linear-gradient(100deg,#fff078,#ffce39);border:2px solid #ffefa8;border-radius:17px;font-weight:900;color:#21183b;font-size:17px;box-shadow:0 0 18px #ffdc5236}.foot{margin-top:12px;font-size:12px;color:var(--muted);line-height:1.5;text-align:center}.notice{border-radius:14px;border:1px solid #5767a0;padding:11px 12px;background:#1b2750;color:#d4e0ff;font-size:12px;margin-top:14px;line-height:1.5}.status{margin-top:8px;min-height:18px;font-size:12px;color:#ffe88b}
 .modal-layer{position:fixed;inset:0;z-index:20;background:#020715c9;display:none;align-items:center;justify-content:center;padding:20px}.modal-layer.open{display:flex}.modal{background:#181d3c;border:1px solid #7178ae;box-shadow:0 24px 80px #000d;width:min(440px,100%);max-height:80vh;overflow:auto;border-radius:22px;padding:18px}.modal h3{margin:0}.close{border:0;background:transparent;color:#fff;font-size:26px}.option{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:#232a50;border:1px solid #49547d;border-radius:15px;margin-top:9px;padding:10px 12px;color:white}.option:disabled{opacity:.48}.option strong{font-size:14px}.option small{display:block;color:#aeb8d2;font-size:11px;margin-top:3px}.option .end{margin-left:auto;color:#ffe07b;font-size:12px}.option .token-stack{margin-right:2px}
-.wallet-details{font-size:13px;color:#d3d9ef;padding:8px 0;display:none}.wallet-details.on{display:block}.wallet-details strong{color:#ffdf69}.wallet-details button{border:1px solid #726ead;background:#22284c;color:white;padding:6px 10px;border-radius:10px;margin-top:7px}
+.quote-panel{margin:12px 0;padding:12px;border:1px solid #7468ae;border-radius:15px;background:#111c39}.quote-panel[hidden]{display:none}.quote-panel .row{font-size:12px;color:#c4cdeb;margin:7px 0;align-items:start}.quote-panel .row strong{color:#f1f3ff;font-size:12px;text-align:right;max-width:54%;overflow-wrap:anywhere}.quote-panel .row:first-child strong{color:#ffe16d}.quote-note{font-size:11px;line-height:1.6;color:#c3cce4}.quote-feedback{min-height:17px;font-size:12px;color:#ffe18a;margin-top:7px}.wallet-details{font-size:13px;color:#d3d9ef;padding:8px 0;display:none}.wallet-details.on{display:block}.wallet-details strong{color:#ffdf69}.wallet-details button{border:1px solid #726ead;background:#22284c;color:white;padding:6px 10px;border-radius:10px;margin-top:7px}
 footer{margin:28px auto;text-align:center;color:#7e8db5;font-size:12px;padding:0 20px}
 @media (max-width:930px){main{grid-template-columns:1fr;gap:26px}.headline{order:2}.swap{order:1}}@media (max-width:540px){header{padding-inline:16px}.brand strong{font-size:18px}.connect{padding:10px 14px}.swap{padding:16px;border-radius:24px}.field{padding:12px}.row.mobile-stack{align-items:stretch;flex-direction:column}.coin-select{width:100%;min-width:0}.coin-logo{width:40px;height:40px}}
 </style>
@@ -48,17 +49,26 @@ footer{margin:28px auto;text-align:center;color:#7e8db5;font-size:12px;padding:0
 </section>
 <section class="swap" aria-label="Swap interface">
 <h2>APXN DEX</h2>
-<p class="sub">Multichain preview • live balances for supported EVM tokens</p>
+<p class="sub">Multichain preview • live token balances + LI.FI quotes</p>
 <button type="button" class="network-button" id="networkButton"><img class="network-logo" id="networkIcon" alt="BNB Smart Chain" src="https://raw.githubusercontent.com/0xa3k5/web3icons/main/packages/core/src/svgs/networks/background/binance-smart-chain.svg"><strong id="networkName">BNB Smart Chain</strong><small>Change ▾</small></button>
 <div class="wallet-details" id="walletDetails"><div class="row"><span>Wallet: <strong id="walletAddress">—</strong></span><span id="walletBalance">—</span></div><div><button id="disconnectButton" type="button">Disconnect from page</button></div></div>
 <div class="field"><div class="row hint"><span>You pay</span><span id="payBalance">Balance: —</span></div><div class="row mobile-stack" style="margin-top:12px"><input class="amount" id="payAmount" inputmode="decimal" aria-label="Amount to pay" placeholder="0.0"><button class="coin-select" id="payCoin" type="button"><span class="left"><span class="token-stack"><img class="coin-logo" id="payIcon" alt="USDT"><img class="badge-logo" id="payBadge" alt="BNB Smart Chain"></span><span class="coin-meta"><span class="coin-main" id="paySymbol">USDT</span><small id="payNetworkTag">BNB Smart Chain</small></span></span><span class="chev">⌄</span></button></div></div>
 <div class="middle"><button class="reverse" id="reverseButton" type="button" aria-label="Reverse pair">↕</button></div>
 <div class="field"><div class="row hint"><span>You receive</span><span id="receiveBalance">Balance: —</span></div><div class="row mobile-stack" style="margin-top:12px"><input class="amount" id="receiveAmount" aria-label="Estimated receive amount" placeholder="—" readonly><button class="coin-select" id="receiveCoin" type="button"><span class="left"><span class="token-stack"><img class="coin-logo" id="receiveIcon" alt="BNB"><img class="badge-logo" id="receiveBadge" alt="BNB Smart Chain"></span><span class="coin-meta"><span class="coin-main" id="receiveSymbol">BNB</span><small id="receiveNetworkTag">BNB Smart Chain</small></span></span><span class="chev">⌄</span></button></div></div>
-<div class="fee"><span>APXN planned fee</span><strong>0.10%</strong></div>
+<div class="fee"><span>APXN planned fee (not charged)</span><strong>0.10%</strong></div>
+<div class="quote-feedback" id="quoteFeedback" role="status" aria-live="polite">Connect wallet and enter amount to request a live LI.FI quote.</div>
+<div class="quote-panel" id="quotePanel" hidden aria-label="LI.FI live quote details">
+ <div class="row"><span>Estimated receive</span><strong id="quoteReceive">—</strong></div>
+ <div class="row"><span>Minimum (incl. quoted slippage)</span><strong id="quoteMinimum">—</strong></div>
+ <div class="row"><span>Route</span><strong id="quoteRoute">—</strong></div>
+ <div class="row"><span>Estimated network gas (USD)</span><strong id="quoteGas">—</strong></div>
+ <div class="row"><span>Provider fees (USD)</span><strong id="quoteProviderFees">—</strong></div>
+ <div class="quote-note" id="quoteNote">LI.FI estimate only; the planned APXN fee is NOT included or collected. Final execution price may change.</div>
+</div>
 <button class="swap-action" id="swapButton" type="button">Start Swap</button>
 <div class="status" id="status"></div>
-<div class="notice">Read-only wallet balances: selected supported ERC-20/BEP-20 tokens and the native network coin. Other tokens display Not configured, never a made-up zero. NEAR and TON remain visual previews; swaps are disabled.</div>
-<div class="foot">Network gas and liquidity-provider fees are separate from the planned APXN platform fee.</div>
+<div class="notice">Read-only wallet and LI.FI quotes for supported EVM tokens. Unverified tokens show Quote unavailable; no invented prices. NEAR/TON remain visual previews, APXN is locked, and transactions are disabled.</div>
+<div class="foot">Quotes may include provider and network charges. The 0.10% APXN fee is PLANNED ONLY: not in the quoted amount, not deducted, and not collected.</div>
 </section>
 </main>
 <footer>APXN DEX • Independent testing project • Not connected to the APXN mining balance</footer>
@@ -124,6 +134,11 @@ const ERC20_TOKENS=Object.freeze({
 // Only read-only RPC methods are used. No approvals, signatures, or transactions.
 const BALANCE_OF_SELECTOR='0x70a08231'; // balanceOf(address)
 const DECIMALS_SELECTOR='0x313ce567';   // decimals()
+// Quote requests use LI.FI's public read-only API. Never submit transactionRequest.
+const LIFI_QUOTE_URL='https://li.quest/v1/quote';
+const NATIVE_TOKEN='0x0000000000000000000000000000000000000000';
+const QUOTE_DEBOUNCE_MS=1000;
+let quoteRequestId=0,quoteTimer=null,quoteAbort=null;
 let balanceRequestId=0;
 let chain=NETWORKS[0],pay='USDT',receive='BNB',wallet=null,account=null,liveChainId=null,nativeWei=null;
 function status(msg){$('status').textContent=msg||''}
@@ -156,6 +171,7 @@ function showModal(title,items){$('modalTitle').textContent=title;const root=$('
 function closeModal(){$('modalLayer').classList.remove('open')}
 $('closeModal').onclick=closeModal;$('modalLayer').addEventListener('click',e=>{if(e.target===$('modalLayer'))closeModal()});document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 function updateLabels(){
+ clearQuote('Enter an amount to request a LI.FI quote.');
  balanceRequestId++; // Discard obsolete balance responses when network/token selection changes.
  pay=chain.tokens.includes(pay)?pay:chain.tokens[0];
  receive=chain.tokens.includes(receive)&&receive!==pay?receive:(chain.tokens.find(t=>t!==pay)||pay);
@@ -165,10 +181,124 @@ function updateLabels(){
 }
 $('networkButton').onclick=()=>showModal('Choose network',NETWORKS.map(n=>({label:n.name,description:n.locked?'Planned network — not available yet':(n.vm==='evm'?'EVM network • Chain ID '+n.id:(n.vm.toUpperCase()+' network • wallet integration next phase')),icon:networkIconUrl(n),disabled:n.locked,end:n.locked?'🔒 Soon':(n.vm==='evm'?'':'Soon'),select:async()=>{chain=n;pay=n.tokens.includes('USDT')?'USDT':n.tokens[0];receive=n.tokens.find(t=>t!==pay)||pay;updateLabels();if(chain.vm!=='evm'){nativeWei=null;status(chain.name+' added to the design. Wallet connection for this network comes in a later phase.');return}if(account&&liveChainId!==chain.id){status('Switching wallet network…');await switchChain()}else if(account){await readNativeBalance()}else{status('')}}})));
 function chooseToken(which){const other=which==='pay'?receive:pay;const items=chain.tokens.map(t=>({label:t,description:'On '+chain.name,icon:tokenIconUrl(t,chain),badge:networkIconUrl(chain),end:t===other?'Selected':'',disabled:t===other,select:()=>{if(which==='pay')pay=t;else receive=t;updateLabels();if(account)readNativeBalance()}})); if(!chain.tokens.includes('APXN')) items.push({label:'APXN',description:'Coming soon — disabled',disabled:true,end:'🔒 Soon',icon:APXN_ICON,badge:networkIconUrl(chain),select:()=>{}}); showModal('Choose token', items)}
-$('payCoin').onclick=()=>chooseToken('pay');$('receiveCoin').onclick=()=>chooseToken('receive');$('reverseButton').onclick=()=>{[pay,receive]=[receive,pay];updateLabels();if(account)readNativeBalance()};$('payAmount').addEventListener('input',()=>{$('receiveAmount').value='';status('Real quotes will be enabled after wallet and API testing.')});
+// Convert entered decimal to exact base units; no floating-point token amounts.
+function parseDecimalUnits(text,decimals){
+ const amount=String(text).trim().replace(',', '.');
+ if(!/^(?:0|[1-9]\d{0,35})(?:\.\d{0,36})?$/.test(amount))throw new Error('Enter a valid positive amount (use a dot for decimals).');
+ if(!Number.isInteger(decimals)||decimals<0||decimals>36)throw new Error('Token decimals are unavailable.');
+ const [whole,fract='']=amount.split('.');
+ if(fract.length>decimals)throw new Error('Too many decimal places for '+pay+'.');
+ const units=BigInt(whole)*(10n**BigInt(decimals))+BigInt((fract.padEnd(decimals,'0'))||'0');
+ if(units<=0n)throw new Error('Enter an amount greater than zero.');
+ return units.toString();
+}
+function clearQuote(message){
+ ++quoteRequestId;
+ if(quoteTimer!==null){clearTimeout(quoteTimer);quoteTimer=null;}
+ if(quoteAbort){quoteAbort.abort();quoteAbort=null;}
+ $('receiveAmount').value='';
+ $('quotePanel').hidden=true;
+ $('quoteFeedback').textContent=message||'';
+}
+function scheduleQuote(){
+ clearQuote('');
+ const entered=$('payAmount').value.trim();
+ if(!entered){$('quoteFeedback').textContent='Enter an amount to request a LI.FI quote.';return;}
+ if(chain.locked||chain.vm!=='evm'){$('quoteFeedback').textContent=chain.name+' is a visual preview: live quotes not enabled.';return;}
+ if(!account||!wallet){$('quoteFeedback').textContent='Connect your EVM wallet to see a live quote.';return;}
+ if(liveChainId!==chain.id){$('quoteFeedback').textContent='Switch your wallet to '+chain.name+' for a quote.';return;}
+ if(!getQuoteTokenAddress(chain,pay)||!getQuoteTokenAddress(chain,receive)){
+   $('quoteFeedback').textContent='Quote unavailable: contract address not verified for this token on '+chain.name+'.';return;
+ }
+ const id=quoteRequestId;
+ $('quoteFeedback').textContent='Checking LI.FI quote…';
+ quoteTimer=setTimeout(()=>{quoteTimer=null;fetchLiveQuote(id)},QUOTE_DEBOUNCE_MS);
+}
+function getQuoteTokenAddress(net,symbol){
+ if(net.vm!=='evm'||net.locked||symbol==='APXN')return null;
+ if(symbol===net.symbol)return NATIVE_TOKEN;
+ const addr=ERC20_TOKENS[net.id]?.[symbol];
+ return typeof addr==='string'&&/^0x[a-fA-F0-9]{40}$/.test(addr)?addr:null;
+}
+function quoteIsCurrent(id,netId,addr,source,target){
+ return id===quoteRequestId && account===addr && chain.id===netId && liveChainId===netId && pay===source && receive===target;
+}
+function sumUsd(costs){
+ if(!Array.isArray(costs)||!costs.length)return 'Not reported';
+ let total=0,hasNumber=false;
+ for(const c of costs){
+   if(c.amountUSD!==null&&c.amountUSD!==undefined&&String(c.amountUSD).trim()!==''){
+     const n=Number(c.amountUSD);
+     if(Number.isFinite(n)&&n>=0){total+=n;hasNumber=true;}
+   }
+ }
+ return hasNumber?'$'+total.toFixed(4):'Not reported';
+}
+function formatQuoteAmount(raw,decimals){
+ if(!/^\d+$/.test(String(raw)))throw new Error('Quote amount is invalid.');
+ return formatUnits(raw,decimals,8);
+}
+async function fetchLiveQuote(id){
+ const selected=chain,source=pay,target=receive,addr=account,currentWallet=wallet;
+ const valid=()=>quoteIsCurrent(id,selected.id,addr,source,target)&&wallet===currentWallet;
+ if(!valid())return;
+ const fromToken=getQuoteTokenAddress(selected,source),toToken=getQuoteTokenAddress(selected,target);
+ if(!fromToken||!toToken)return;
+ const controller=new AbortController();quoteAbort=controller;
+ const timeout=setTimeout(()=>controller.abort(),16000);
+ try{
+   let decimals=18;
+   if(source!==selected.symbol){
+     const hex=await currentWallet.request({method:'eth_call',params:[{to:fromToken,data:DECIMALS_SELECTOR},'latest']});
+     if(!valid())return;
+     if(!/^0x[0-9a-f]+$/i.test(hex))throw new Error('Could not read source token decimals.');
+     decimals=Number(BigInt(hex));
+   }
+   const fromAmount=parseDecimalUnits($('payAmount').value,decimals);
+   if(!valid())return;
+   const params=new URLSearchParams({
+     fromChain:String(selected.id),toChain:String(selected.id),fromToken,toToken,
+     fromAmount,fromAddress:addr,toAddress:addr,slippage:'0.005'
+   });
+   // No API key, fee, fee-wallet, approvals, signing or transaction submission in this preview.
+   const response=await fetch(LIFI_QUOTE_URL+'?'+params,{method:'GET',signal:controller.signal,headers:{'Accept':'application/json'}});
+   if(!valid())return;
+   let result;
+   try{result=await response.json()}catch(_){throw new Error('LI.FI returned a non-JSON response.');}
+   if(!response.ok){
+     if(response.status===429)throw new Error('LI.FI rate limit reached. Wait and try again later.');
+     if(response.status===404||result?.code===1002)throw new Error('No live LI.FI quote for this pair and amount. Try another amount or token.');
+     throw new Error((typeof result?.message==='string'&&result.message.slice(0,200))||'LI.FI quote unavailable ('+response.status+').');
+   }
+   if(!result?.estimate||!result?.action?.toToken)throw new Error('LI.FI returned an incomplete quote.');
+   if(Number(result.action.fromChainId)!==selected.id||Number(result.action.toChainId)!==selected.id)
+     throw new Error('LI.FI returned a quote for a different network.');
+   const decimalsOut=Number(result.action.toToken.decimals);
+   if(!Number.isInteger(decimalsOut)||decimalsOut<0||decimalsOut>36)throw new Error('LI.FI returned invalid token decimals.');
+   const estimated=formatQuoteAmount(result.estimate.toAmount,decimalsOut);
+   const minimum=result.estimate.toAmountMin?formatQuoteAmount(result.estimate.toAmountMin,decimalsOut):'Not reported';
+   if(!valid())return;
+   $('receiveAmount').value=estimated;
+   $('quoteReceive').textContent=estimated+' '+target;
+   $('quoteMinimum').textContent=minimum==='Not reported'?minimum:minimum+' '+target;
+   $('quoteRoute').textContent=String(result.toolDetails?.name||result.tool||'LI.FI').slice(0,80);
+   $('quoteGas').textContent=sumUsd(result.estimate.gasCosts);
+   $('quoteProviderFees').textContent=sumUsd(result.estimate.feeCosts);
+   $('quotePanel').hidden=false;
+   $('quoteFeedback').textContent='Live LI.FI estimate received • '+new Date().toLocaleTimeString()+'. Read-only.';
+ }catch(e){
+   if(!valid())return;
+   $('receiveAmount').value='';$('quotePanel').hidden=true;
+   $('quoteFeedback').textContent=e.name==='AbortError'?'Quote request timed out. Try again.':(e instanceof TypeError?'Could not contact LI.FI. Check your network and browser.':String(e.message||'Quote unavailable.'));
+ }finally{
+   clearTimeout(timeout);
+   if(quoteAbort===controller)quoteAbort=null;
+ }
+}
+$('payCoin').onclick=()=>chooseToken('pay');$('receiveCoin').onclick=()=>chooseToken('receive');$('reverseButton').onclick=()=>{[pay,receive]=[receive,pay];updateLabels();if(account)readNativeBalance()};$('payAmount').addEventListener('input',scheduleQuote);
 function shortAddress(a){return a?a.slice(0,6)+'…'+a.slice(-4):'—'}
 function provider(){const eth=window.ethereum;if(!eth)return null;if(Array.isArray(eth.providers)&&eth.providers.length){return eth.providers.find(p=>p.isTrust)||eth.providers.find(p=>p.isMetaMask)||eth.providers[0]}return eth}
-function resetWallet(){balanceRequestId++;wallet=null;account=null;liveChainId=null;nativeWei=null;$('walletDetails').classList.remove('on');$('walletButton').textContent='Connect Wallet';$('payBalance').textContent='Balance: —';$('receiveBalance').textContent='Balance: —';status('Disconnected from this page. Revoke permission in your wallet if needed.')}
+function resetWallet(){clearQuote('Connect wallet to get a live quote.');balanceRequestId++;wallet=null;account=null;liveChainId=null;nativeWei=null;$('walletDetails').classList.remove('on');$('walletButton').textContent='Connect Wallet';$('payBalance').textContent='Balance: —';$('receiveBalance').textContent='Balance: —';status('Disconnected from this page. Revoke permission in your wallet if needed.')}
 function ethFormatted(hex){const v=BigInt(hex),unit=10n**18n;const whole=v/unit;let frac=(v%unit).toString().padStart(18,'0').slice(0,5).replace(/0+$/,'');return whole.toString()+(frac?'.'+frac:'')}
 function refreshWalletHeader(){
  if(!account){$('walletDetails').classList.remove('on');return}
@@ -253,6 +383,7 @@ async function readNativeBalance(){
    $('payBalance').textContent=payText||'Balance: unavailable';
    $('receiveBalance').textContent=receiveText||'Balance: unavailable';
    status('Read-only balances refreshed. Token support depends on verified contract addresses.');
+   if($('payAmount').value.trim())scheduleQuote();
  }catch(e){
    if(id!==balanceRequestId||account!==targetAccount||chain.id!==targetChain||wallet!==targetWallet)return;
    nativeWei=null;refreshWalletHeader();
@@ -261,11 +392,11 @@ async function readNativeBalance(){
    status('Could not read balances. Check your wallet network or try Refresh.');
  }
 }
-async function switchChain(){if(!wallet||!chain.id||chain.vm!=='evm')return;try{await wallet.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x'+chain.id.toString(16)}]});liveChainId=chain.id;await readNativeBalance()}catch(e){nativeWei=null;refreshWalletHeader();status(e.code===4902?'This network is not configured in your wallet; add it through your wallet settings.':e.code===4001?'Network switch declined.':(e.message||'Change the network in your wallet to continue.'))}}
+async function switchChain(){if(!wallet||!chain.id||chain.vm!=='evm')return;try{await wallet.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x'+chain.id.toString(16)}]});liveChainId=chain.id;await readNativeBalance()}catch(e){clearQuote('Wallet network mismatch: quote cleared.');nativeWei=null;refreshWalletHeader();status(e.code===4902?'This network is not configured in your wallet; add it through your wallet settings.':e.code===4001?'Network switch declined.':(e.message||'Change the network in your wallet to continue.'))}}
 async function connect(){if(chain.vm!=='evm'){status('This network is shown in the design, but wallet connection for '+chain.name+' is not enabled yet.');return}const p=provider();if(!p){status('No wallet detected. Open this HTTPS page inside Trust Wallet or MetaMask mobile DApp browser.');return}try{status('Waiting for wallet permission…');const accounts=await p.request({method:'eth_requestAccounts'});if(!accounts?.[0]){status('No account was selected.');return}wallet=p;account=accounts[0];liveChainId=parseInt(await p.request({method:'eth_chainId'}),16);refreshWalletHeader();if(liveChainId!==chain.id){status('Connected. Switch to '+chain.name+' to read balances.');await switchChain()}else await readNativeBalance()}catch(e){status(e.code===4001?'Wallet connection declined.':(e.message||'Wallet connection failed.'))}}
 $('walletButton').onclick=()=>account?showModal('Wallet connection',[{label:shortAddress(account),description:'Connected address',disabled:true,select:()=>{}},{label:'Refresh balances',description:chain.vm==='evm'?'Refresh current EVM native balance':'Not available on this network yet',disabled:chain.vm!=='evm',select:readNativeBalance},{label:'Disconnect from this page',select:resetWallet}]):connect();$('disconnectButton').onclick=resetWallet;
-$('swapButton').onclick=()=>status(chain.vm==='evm'?'Trading remains disabled in this private preview.':'This network has been added visually; swap support comes later.');
-if(window.ethereum){const p=provider();p?.on?.('accountsChanged',accounts=>{if(!accounts?.length){resetWallet();return}if(wallet){balanceRequestId++;nativeWei=null;account=accounts[0];readNativeBalance()}});p?.on?.('chainChanged',()=>{balanceRequestId++;nativeWei=null;if(wallet)readNativeBalance()})}
+$('swapButton').onclick=()=>status('Read-only preview. This page cannot approve, sign, send, or execute a swap.');
+if(window.ethereum){const p=provider();p?.on?.('accountsChanged',accounts=>{clearQuote('Wallet changed: refreshing quote availability.');if(!accounts?.length){resetWallet();return}if(wallet){balanceRequestId++;nativeWei=null;account=accounts[0];readNativeBalance()}});p?.on?.('chainChanged',()=>{clearQuote('Network changed: refreshing quote availability.');balanceRequestId++;nativeWei=null;if(wallet)readNativeBalance()})}
 updateLabels();
 </script>
 </body>
