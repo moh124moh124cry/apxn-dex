@@ -144,6 +144,7 @@ const QUOTE_DEBOUNCE_MS=1000;
 const QUOTE_REFRESH_MS=60000; // Recheck a visible quote no more often than once a minute.
 const QUOTE_REFRESH_CHECK_MS=10000; // Low-overhead age check; no network traffic unless stale.
 const QUOTE_READINESS_MAX_AGE_MS=75000; // Local PREVIEW safety window, not a LI.FI promise or executable quote lifetime.
+const WALLET_SAFETY_AUDIT_MS=20000; // Read-only live wallet/account/chain/balance checks while a quote is visible.
 const APXN_FEE_DENOMINATOR=1000n; // 0.10%, display only — not charged
 const GAS_CUSHION_NUMERATOR=13n; // 30% extra on the quoted native gas; not a guarantee
 const GAS_CUSHION_DENOMINATOR=10n;
@@ -151,6 +152,7 @@ const MAX_QUOTE_REFINEMENTS=2; // At most three live LI.FI quotes per native MAX
 let quoteRequestId=0,quoteTimer=null,quoteAbort=null;
 let quoteUpdatedAt=0,quoteAttemptedAt=0,lastAutoRefreshAt=0; // Date.now timestamps; quote age is not an API expiry.
 let balanceRequestId=0;
+let balanceUpdatedAt=0,walletSafetyCheckedAt=0,walletSafetyBusy=false;
 let payBalanceInfo=null; // Exact raw balance/decimals for current wallet, chain and pay token; never inferred from rounded UI text.
 let quoteGasInfo=null; // Gas data for the exact current LI.FI quote; never a transaction instruction.
 let quoteReadiness=null; // Exact validated quote identity; NEVER transactionRequest or signing data.
@@ -219,6 +221,8 @@ function spendCheck(){
  if(liveChainId!==chain.id)return {message:'Select '+chain.name+' in your wallet to check your balance.',good:false};
  if(!payBalanceInfo||payBalanceInfo.chainId!==chain.id||payBalanceInfo.account!==account||payBalanceInfo.symbol!==pay)
    return {message:'Balance not available for '+pay+'. Quote is informational only.',good:false};
+ if(!balanceUpdatedAt||Date.now()-balanceUpdatedAt>QUOTE_READINESS_MAX_AGE_MS)
+   return {message:'Wallet balance verification is old. Waiting for a fresh read-only balance check.',good:false};
  let amount;
  try{amount=BigInt(parseDecimalUnits(text,payBalanceInfo.decimals))}
  catch(e){return {message:String(e.message||'Invalid amount'),good:false}};
@@ -318,6 +322,76 @@ function scheduleQuote(){
  const id=quoteRequestId;
  $('quoteFeedback').textContent='Checking LI.FI quote…';
  quoteTimer=setTimeout(()=>{quoteTimer=null;fetchLiveQuote(id)},QUOTE_DEBOUNCE_MS);
+}
+// V11: Check the ACTUAL selected account and chain through non-prompting EVM RPC.
+// An injected provider can occasionally miss account/chain events, especially on mobile.
+async function readWalletSafetyContext(targetWallet,expectedAccount,expectedChain){
+ try{
+   const [hex,accounts]=await Promise.all([
+     targetWallet.request({method:'eth_chainId'}),
+     targetWallet.request({method:'eth_accounts'})
+   ]);
+   const actualChain=typeof hex==='string'&&/^0x[0-9a-f]+$/i.test(hex)?parseInt(hex,16):null;
+   const actualAccount=Array.isArray(accounts)&&typeof accounts[0]==='string'?accounts[0]:null;
+   return {ok:actualChain===expectedChain&&actualAccount?.toLowerCase()===expectedAccount.toLowerCase(),
+     actualChain,accounts};
+ }catch(_){return {ok:false,actualChain:null,accounts:null};}
+}
+function invalidateWalletSafety(reason,context,targetWallet,targetAccount){
+ if(wallet!==targetWallet||account!==targetAccount)return; // An already replaced wallet must not be disturbed.
+ smartMaxState=null;balanceRequestId++;payBalanceInfo=null;nativeWei=null;balanceUpdatedAt=0;
+ clearQuote(reason); // Hides the previous receive amount and green readiness immediately.
+ if(Array.isArray(context.accounts)&&
+    (!context.accounts[0]||context.accounts[0].toLowerCase()!==targetAccount.toLowerCase())){
+   // The selected account changed or site access was revoked without an accountsChanged event.
+   wallet=null;account=null;liveChainId=null;
+   $('walletButton').textContent='Connect Wallet';$('walletDetails').classList.remove('on');
+   $('payBalance').textContent='Balance: —';$('receiveBalance').textContent='Balance: —';
+   status('Wallet account changed or disconnected. Tap Connect Wallet to verify the new account.');
+ }else{
+   // A different chain or a failed read-only RPC check must never retain a green quote.
+   liveChainId=context.actualChain;
+   refreshWalletHeader();
+   status('Wallet safety check requires a fresh balance read or the selected network.');
+ }
+ refreshSpendValidation();
+}
+async function safetyAuditVisibleQuote(){
+ if(document.hidden||walletSafetyBusy||!wallet||!account||chain.vm!=='evm'||chain.locked||
+    !quoteReadiness||$('quotePanel').hidden||quoteAbort||smartMaxState||
+    Date.now()-walletSafetyCheckedAt<WALLET_SAFETY_AUDIT_MS)return;
+ const safetyId=quoteRequestId,targetWallet=wallet,targetAccount=account,targetChain=chain.id;
+ const targetPay=pay,expectedBalance=payBalanceInfo;
+ const current=()=>safetyId===quoteRequestId&&wallet===targetWallet&&account===targetAccount&&
+   chain.id===targetChain&&pay===targetPay&&quoteReadiness&&!$('quotePanel').hidden;
+ walletSafetyCheckedAt=Date.now();walletSafetyBusy=true;
+ try{
+   const context=await readWalletSafetyContext(targetWallet,targetAccount,targetChain);
+   if(!current())return;
+   if(!context.ok){invalidateWalletSafety('Wallet account/network could not be reverified. Quote cleared.',context,targetWallet,targetAccount);return;}
+   // Re-read exact base units, not formatted wallet text. A balance reduction must revoke readiness.
+   const nativeHex=await targetWallet.request({method:'eth_getBalance',params:[targetAccount,'latest']});
+   if(!current())return;
+   if(typeof nativeHex!=='string'||!/^0x[0-9a-f]+$/i.test(nativeHex))throw Error('Invalid native balance');
+   let payRaw=BigInt(nativeHex);
+   if(targetPay!==chain.symbol){
+     const token=getQuoteTokenAddress(chain,targetPay);
+     if(!token||!expectedBalance)throw Error('Missing verified token balance');
+     const data=BALANCE_OF_SELECTOR+targetAccount.slice(2).toLowerCase().padStart(64,'0');
+     const tokenHex=await targetWallet.request({method:'eth_call',params:[{to:token,data},'latest']});
+     if(!current())return;
+     if(typeof tokenHex!=='string'||!/^0x[0-9a-f]+$/i.test(tokenHex))throw Error('Invalid token balance');
+     payRaw=BigInt(tokenHex);
+   }
+   if(!current())return;
+   if(!expectedBalance||BigInt(nativeHex)!==BigInt(nativeWei)||payRaw!==expectedBalance.raw){
+     clearQuote('Wallet balance changed. Rechecking the amount, gas and LI.FI quote…');
+     await readNativeBalance(); // Existing read-only path obtains a quote for the exact amount.
+   }else refreshSpendValidation();
+ }catch(_){
+   if(current())invalidateWalletSafety('Wallet safety RPC unavailable. Previous quote cleared.',
+     {accounts:null,actualChain:null},targetWallet,targetAccount);
+ }finally{walletSafetyBusy=false;}
 }
 // Auto-refresh happens only for visible, connected EVM previews with an amount already requested.
 // Before requesting a new LI.FI estimate, re-read the wallet's native/token balances.
@@ -482,6 +556,12 @@ async function fetchLiveQuote(id){
    if(Number(result.action.fromChainId)!==selected.id||Number(result.action.toChainId)!==selected.id)
      throw new Error('LI.FI returned a quote for a different network.');
    const checked=verifyReadOnlyQuote(result,selected,fromToken,toToken,fromAmount,decimals,addr);
+   // Before showing green, independently verify the live account/chain even if wallet events were missed.
+   const safety=await readWalletSafetyContext(currentWallet,addr,selected.id);
+   if(!valid())return;
+   if(!safety.ok){invalidateWalletSafety('Wallet account/network could not be verified. Quote cleared.',
+     safety,currentWallet,addr);return;}
+   walletSafetyCheckedAt=Date.now();
    const decimalsOut=checked.decimalsOut;
    const estimated=formatQuoteAmount(checked.estimated,decimalsOut);
    const minimum=formatQuoteAmount(checked.minimum,decimalsOut);
@@ -525,7 +605,7 @@ async function fetchLiveQuote(id){
 $('payCoin').onclick=()=>chooseToken('pay');$('receiveCoin').onclick=()=>chooseToken('receive');$('reverseButton').onclick=()=>{[pay,receive]=[receive,pay];updateLabels();if(account)readNativeBalance()};$('payAmount').addEventListener('input',()=>{smartMaxState=null;scheduleQuote()});
 function shortAddress(a){return a?a.slice(0,6)+'…'+a.slice(-4):'—'}
 function provider(){const eth=window.ethereum;if(!eth)return null;if(Array.isArray(eth.providers)&&eth.providers.length){return eth.providers.find(p=>p.isTrust)||eth.providers.find(p=>p.isMetaMask)||eth.providers[0]}return eth}
-function resetWallet(){smartMaxState=null;clearQuote('Connect wallet to get a live quote.');balanceRequestId++;wallet=null;account=null;liveChainId=null;nativeWei=null;$('walletDetails').classList.remove('on');$('walletButton').textContent='Connect Wallet';$('payBalance').textContent='Balance: —';$('receiveBalance').textContent='Balance: —';payBalanceInfo=null;refreshSpendValidation();status('Disconnected from this page. Revoke permission in your wallet if needed.')}
+function resetWallet(){smartMaxState=null;balanceUpdatedAt=0;clearQuote('Connect wallet to get a live quote.');balanceRequestId++;wallet=null;account=null;liveChainId=null;nativeWei=null;$('walletDetails').classList.remove('on');$('walletButton').textContent='Connect Wallet';$('payBalance').textContent='Balance: —';$('receiveBalance').textContent='Balance: —';payBalanceInfo=null;refreshSpendValidation();status('Disconnected from this page. Revoke permission in your wallet if needed.')}
 function ethFormatted(hex){const v=BigInt(hex),unit=10n**18n;const whole=v/unit;let frac=(v%unit).toString().padStart(18,'0').slice(0,5).replace(/0+$/,'');return whole.toString()+(frac?'.'+frac:'')}
 function refreshWalletHeader(){
  if(!account){$('walletDetails').classList.remove('on');return}
@@ -583,7 +663,7 @@ async function readOneToken(symbol, id, targetChain, targetAccount, targetWallet
 async function readNativeBalance(){
  if(!wallet||!account)return;
  const id=++balanceRequestId,targetChain=chain.id,targetAccount=account,targetWallet=wallet;
- smartMaxState=null;payBalanceInfo=null;
+ smartMaxState=null;payBalanceInfo=null;balanceUpdatedAt=0;
  clearQuote('Refreshing wallet balances before validating the quote…');
  refreshSpendValidation();
  const valid=()=>isCurrentBalanceRequest(id,targetChain,targetAccount,targetWallet);
@@ -598,6 +678,13 @@ async function readNativeBalance(){
    const walletChainId=parseInt(await targetWallet.request({method:'eth_chainId'}),16);
    if(id!==balanceRequestId||account!==targetAccount||wallet!==targetWallet||chain.id!==targetChain)return;
    liveChainId=walletChainId;
+   // Ignore stale account selections even when the provider misses the accountsChanged event.
+   const rpcAccounts=await targetWallet.request({method:'eth_accounts'});
+   if(id!==balanceRequestId||account!==targetAccount||wallet!==targetWallet||chain.id!==targetChain)return;
+   if(!Array.isArray(rpcAccounts)||rpcAccounts[0]?.toLowerCase()!==targetAccount.toLowerCase()){
+     invalidateWalletSafety('Wallet account changed. Quote cleared.',
+       {actualChain:walletChainId,accounts:rpcAccounts},targetWallet,targetAccount);return;
+   }
    if(walletChainId!==targetChain){
      nativeWei=null;refreshWalletHeader();
      status('Wallet network differs. Select '+chain.name+' in your wallet.');return;
@@ -613,6 +700,7 @@ async function readNativeBalance(){
    $('payBalance').textContent=payText?.text||'Balance: unavailable';
    $('receiveBalance').textContent=receiveText?.text||'Balance: unavailable';
    payBalanceInfo=payText?.raw!==null&&payText?.raw!==undefined?{raw:payText.raw,decimals:payText.decimals,chainId:targetChain,account:targetAccount,symbol:targetPay}:null;
+   balanceUpdatedAt=payBalanceInfo?Date.now():0;
    refreshSpendValidation();
    status('Read-only balances refreshed. Token support depends on verified contract addresses.');
    if($('payAmount').value.trim())scheduleQuote();
@@ -621,7 +709,7 @@ async function readNativeBalance(){
    nativeWei=null;refreshWalletHeader();
    $('payBalance').textContent='Balance: unavailable';
    $('receiveBalance').textContent='Balance: unavailable';
-   payBalanceInfo=null;refreshSpendValidation();
+   payBalanceInfo=null;balanceUpdatedAt=0;refreshSpendValidation();
    status('Could not read balances. Check your wallet network or try Refresh.');
  }
 }
@@ -629,16 +717,13 @@ async function switchChain(){if(!wallet||!chain.id||chain.vm!=='evm')return;try{
 async function connect(){if(chain.vm!=='evm'){status('This network is shown in the design, but wallet connection for '+chain.name+' is not enabled yet.');return}const p=provider();if(!p){status('No wallet detected. Open this HTTPS page inside Trust Wallet or MetaMask mobile DApp browser.');return}try{status('Waiting for wallet permission…');const accounts=await p.request({method:'eth_requestAccounts'});if(!accounts?.[0]){status('No account was selected.');return}wallet=p;account=accounts[0];liveChainId=parseInt(await p.request({method:'eth_chainId'}),16);refreshWalletHeader();if(liveChainId!==chain.id){status('Connected. Switch to '+chain.name+' to read balances.');await switchChain()}else await readNativeBalance()}catch(e){status(e.code===4001?'Wallet connection declined.':(e.message||'Wallet connection failed.'))}}
 $('walletButton').onclick=()=>account?showModal('Wallet connection',[{label:shortAddress(account),description:'Connected address',disabled:true,select:()=>{}},{label:'Refresh balances',description:chain.vm==='evm'?'Refresh current EVM native balance':'Not available on this network yet',disabled:chain.vm!=='evm',select:readNativeBalance},{label:'Disconnect from this page',select:resetWallet}]):connect();$('disconnectButton').onclick=resetWallet;
 $('swapButton').onclick=()=>status('Read-only preview. No approvals, signatures or swap transactions are implemented.');
-if(window.ethereum){const p=provider();p?.on?.('accountsChanged',accounts=>{smartMaxState=null;clearQuote('Wallet changed: refreshing quote availability.');if(!accounts?.length){resetWallet();return}if(wallet){balanceRequestId++;payBalanceInfo=null;nativeWei=null;account=accounts[0];refreshSpendValidation();readNativeBalance()}});p?.on?.('chainChanged',()=>{smartMaxState=null;clearQuote('Network changed: refreshing quote availability.');balanceRequestId++;payBalanceInfo=null;nativeWei=null;refreshSpendValidation();if(wallet)readNativeBalance()})}
-// V10 only computes read-only preview checks; swap/signing/approvals/fees remain disabled.
-setInterval(refreshStaleQuote,QUOTE_REFRESH_CHECK_MS);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshStaleQuote()});
-window.addEventListener('focus',refreshStaleQuote);
+if(window.ethereum){const p=provider();p?.on?.('accountsChanged',accounts=>{smartMaxState=null;clearQuote('Wallet changed: refreshing quote availability.');if(!accounts?.length){resetWallet();return}if(wallet){balanceRequestId++;payBalanceInfo=null;balanceUpdatedAt=0;nativeWei=null;account=accounts[0];refreshSpendValidation();readNativeBalance()}});p?.on?.('chainChanged',()=>{smartMaxState=null;clearQuote('Network changed: refreshing quote availability.');balanceRequestId++;payBalanceInfo=null;balanceUpdatedAt=0;nativeWei=null;refreshSpendValidation();if(wallet)readNativeBalance()})}
+// V11 reads wallet/account/chain/native/token balances only; no signing, approvals, swap, or fees.
+setInterval(()=>{refreshStaleQuote();safetyAuditVisibleQuote();},QUOTE_REFRESH_CHECK_MS);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){refreshStaleQuote();safetyAuditVisibleQuote();}});
+window.addEventListener('focus',()=>{refreshStaleQuote();safetyAuditVisibleQuote();});
 updateLabels();
 </script>
 </body>
 </html>
-
-
-
 
