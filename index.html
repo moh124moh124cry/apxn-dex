@@ -48,7 +48,7 @@ footer{margin:28px auto;text-align:center;color:#7e8db5;font-size:12px;padding:0
 </section>
 <section class="swap" aria-label="Swap interface">
 <h2>APXN DEX</h2>
-<p class="sub">Multichain design preview • wallet and native balance on EVM only</p>
+<p class="sub">Multichain preview • live balances for supported EVM tokens</p>
 <button type="button" class="network-button" id="networkButton"><img class="network-logo" id="networkIcon" alt="BNB Smart Chain" src="https://raw.githubusercontent.com/0xa3k5/web3icons/main/packages/core/src/svgs/networks/background/binance-smart-chain.svg"><strong id="networkName">BNB Smart Chain</strong><small>Change ▾</small></button>
 <div class="wallet-details" id="walletDetails"><div class="row"><span>Wallet: <strong id="walletAddress">—</strong></span><span id="walletBalance">—</span></div><div><button id="disconnectButton" type="button">Disconnect from page</button></div></div>
 <div class="field"><div class="row hint"><span>You pay</span><span id="payBalance">Balance: —</span></div><div class="row mobile-stack" style="margin-top:12px"><input class="amount" id="payAmount" inputmode="decimal" aria-label="Amount to pay" placeholder="0.0"><button class="coin-select" id="payCoin" type="button"><span class="left"><span class="token-stack"><img class="coin-logo" id="payIcon" alt="USDT"><img class="badge-logo" id="payBadge" alt="BNB Smart Chain"></span><span class="coin-meta"><span class="coin-main" id="paySymbol">USDT</span><small id="payNetworkTag">BNB Smart Chain</small></span></span><span class="chev">⌄</span></button></div></div>
@@ -57,7 +57,7 @@ footer{margin:28px auto;text-align:center;color:#7e8db5;font-size:12px;padding:0
 <div class="fee"><span>APXN planned fee</span><strong>0.10%</strong></div>
 <button class="swap-action" id="swapButton" type="button">Start Swap</button>
 <div class="status" id="status"></div>
-<div class="notice">Native balance can be read for supported EVM wallets on EVM networks. Each token has its own logo and a small network badge. NEAR and TON can be selected for preview; connecting their wallets and swapping on them are not enabled yet.</div>
+<div class="notice">Read-only wallet balances: selected supported ERC-20/BEP-20 tokens and the native network coin. Other tokens display Not configured, never a made-up zero. NEAR and TON remain visual previews; swaps are disabled.</div>
 <div class="foot">Network gas and liquidity-provider fees are separate from the planned APXN platform fee.</div>
 </section>
 </main>
@@ -96,6 +96,35 @@ const TOKEN_ICON_MAP={
   'POL':'POL','APXN':'APXN'
 };
 const $=id=>document.getElementById(id);
+// Pinned contract addresses. Symbols alone are NOT contract identities: bridged variants
+// such as USDC.e or USDbC are intentionally not substituted for the listed tokens.
+// Add other tokens only after verifying their contracts for that specific network.
+const ERC20_TOKENS=Object.freeze({
+  56: {
+    USDT:'0x55d398326f99059fF775485246999027B3197955',
+    USDC:'0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d',
+    CAKE:'0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82'
+  },
+  1: {
+    USDT:'0xdAC17F958D2ee523a2206206994597C13D831ec7',
+    USDC:'0xA0b86991c6218b36c1d19D4a2e9eb0cE3606eB48',
+    DAI:'0x6B175474E89094C44Da98b954EedeAC495271d0F',
+    WETH:'0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
+    WBTC:'0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599'
+  },
+  8453: { USDC:'0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+          WETH:'0x4200000000000000000000000000000000000006' },
+  42161: { USDC:'0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+           USDT:'0xFd086bC7CD5C481DCC9C85eE00BfD85C5BfF2D96',
+           WETH:'0x82aF49447D8a07e3bd95BD0d56f35241523fBab1' },
+  137: { USDC:'0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359' },
+  10:  { USDC:'0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85' },
+  43114:{ USDC:'0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E' }
+});
+// Only read-only RPC methods are used. No approvals, signatures, or transactions.
+const BALANCE_OF_SELECTOR='0x70a08231'; // balanceOf(address)
+const DECIMALS_SELECTOR='0x313ce567';   // decimals()
+let balanceRequestId=0;
 let chain=NETWORKS[0],pay='USDT',receive='BNB',wallet=null,account=null,liveChainId=null,nativeWei=null;
 function status(msg){$('status').textContent=msg||''}
 function networkIconUrl(net){
@@ -127,6 +156,7 @@ function showModal(title,items){$('modalTitle').textContent=title;const root=$('
 function closeModal(){$('modalLayer').classList.remove('open')}
 $('closeModal').onclick=closeModal;$('modalLayer').addEventListener('click',e=>{if(e.target===$('modalLayer'))closeModal()});document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 function updateLabels(){
+ balanceRequestId++; // Discard obsolete balance responses when network/token selection changes.
  pay=chain.tokens.includes(pay)?pay:chain.tokens[0];
  receive=chain.tokens.includes(receive)&&receive!==pay?receive:(chain.tokens.find(t=>t!==pay)||pay);
  $('networkName').textContent=chain.name; setImg($('networkIcon'), networkIconUrl(chain), chain.symbol||chain.name.slice(0,2), '#223057'); $('networkIcon').alt=chain.name;
@@ -138,15 +168,104 @@ function chooseToken(which){const other=which==='pay'?receive:pay;const items=ch
 $('payCoin').onclick=()=>chooseToken('pay');$('receiveCoin').onclick=()=>chooseToken('receive');$('reverseButton').onclick=()=>{[pay,receive]=[receive,pay];updateLabels();if(account)readNativeBalance()};$('payAmount').addEventListener('input',()=>{$('receiveAmount').value='';status('Real quotes will be enabled after wallet and API testing.')});
 function shortAddress(a){return a?a.slice(0,6)+'…'+a.slice(-4):'—'}
 function provider(){const eth=window.ethereum;if(!eth)return null;if(Array.isArray(eth.providers)&&eth.providers.length){return eth.providers.find(p=>p.isTrust)||eth.providers.find(p=>p.isMetaMask)||eth.providers[0]}return eth}
-function resetWallet(){wallet=null;account=null;liveChainId=null;nativeWei=null;$('walletDetails').classList.remove('on');$('walletButton').textContent='Connect Wallet';$('payBalance').textContent='Balance: —';$('receiveBalance').textContent='Balance: —';status('Disconnected from this page. Revoke permission in your wallet if needed.')}
+function resetWallet(){balanceRequestId++;wallet=null;account=null;liveChainId=null;nativeWei=null;$('walletDetails').classList.remove('on');$('walletButton').textContent='Connect Wallet';$('payBalance').textContent='Balance: —';$('receiveBalance').textContent='Balance: —';status('Disconnected from this page. Revoke permission in your wallet if needed.')}
 function ethFormatted(hex){const v=BigInt(hex),unit=10n**18n;const whole=v/unit;let frac=(v%unit).toString().padStart(18,'0').slice(0,5).replace(/0+$/,'');return whole.toString()+(frac?'.'+frac:'')}
-function refreshWalletHeader(){if(!account){$('walletDetails').classList.remove('on');return}$('walletDetails').classList.add('on');$('walletAddress').textContent=shortAddress(account);$('walletButton').textContent=shortAddress(account);if(chain.vm!=='evm'){$('walletBalance').textContent='EVM wallet only';$('payBalance').textContent='Balance: —';$('receiveBalance').textContent='Balance: —';return}if(liveChainId!==chain.id){$('walletBalance').textContent='Different network';$('payBalance').textContent='Balance: —';$('receiveBalance').textContent='Balance: —'}else if(nativeWei!==null){$('walletBalance').textContent=ethFormatted(nativeWei)+' '+chain.symbol;$('payBalance').textContent=pay===chain.symbol?'Balance: '+ethFormatted(nativeWei):'Balance: —';$('receiveBalance').textContent=receive===chain.symbol?'Balance: '+ethFormatted(nativeWei):'Balance: —'}}
-async function readNativeBalance(){if(!wallet||!account)return;if(chain.vm!=='evm'){status(chain.name+' wallet integration is planned for a later phase.');return}try{liveChainId=parseInt(await wallet.request({method:'eth_chainId'}),16);if(liveChainId!==chain.id){nativeWei=null;refreshWalletHeader();status('Wallet network differs. Select this network in your wallet.');return}nativeWei=await wallet.request({method:'eth_getBalance',params:[account,'latest']});refreshWalletHeader();status('Connected. Native balance is live; token balances and swaps come next.')}catch(e){status(e.message||'Could not read wallet balance')}}
+function refreshWalletHeader(){
+ if(!account){$('walletDetails').classList.remove('on');return}
+ $('walletDetails').classList.add('on');
+ $('walletAddress').textContent=shortAddress(account);
+ $('walletButton').textContent=shortAddress(account);
+ if(chain.vm!=='evm'){
+   $('walletBalance').textContent='EVM wallet only';
+   $('payBalance').textContent='Balance: —';$('receiveBalance').textContent='Balance: —';return;
+ }
+ if(liveChainId!==chain.id){
+   $('walletBalance').textContent='Different network';
+   $('payBalance').textContent='Balance: —';$('receiveBalance').textContent='Balance: —';return;
+ }
+ $('walletBalance').textContent=nativeWei!==null?formatUnits(nativeWei,18,5)+' '+chain.symbol:'Loading…';
+}
+function formatUnits(raw, decimals, maxPlaces=6){
+ const val=BigInt(raw),places=Number(decimals);
+ if(!Number.isInteger(places)||places<0||places>36)throw new Error('Invalid token decimals');
+ const divisor=10n**BigInt(places),whole=val/divisor;
+ const remainder=val%divisor;
+ if(remainder===0n)return whole.toString();
+ const fractional=remainder.toString().padStart(places,'0');
+ const display=fractional.slice(0,maxPlaces).replace(/0+$/,'');
+ if(!display && val>0n)return whole===0n?'<0.'+'0'.repeat(Math.max(0,maxPlaces-1))+'1':whole.toString()+'…';
+ return whole.toString()+(display?'.'+display:'');
+}
+function tokenAddress(symbol){return ERC20_TOKENS[chain.id]?.[symbol]||null}
+function isCurrentBalanceRequest(id, targetChain, targetAccount, targetWallet){
+ return id===balanceRequestId && chain.id===targetChain && account===targetAccount && wallet===targetWallet && chain.vm==='evm' && liveChainId===targetChain;
+}
+async function readOneToken(symbol, id, targetChain, targetAccount, targetWallet){
+ const valid=()=>isCurrentBalanceRequest(id,targetChain,targetAccount,targetWallet);
+ if(symbol===chain.symbol){
+   if(nativeWei===null)return 'Balance: unavailable';
+   return 'Balance: '+formatUnits(nativeWei,18);
+ }
+ const address=tokenAddress(symbol);
+ if(!address)return 'Balance: Not configured';
+ if(!/^0x[a-fA-F0-9]{40}$/.test(address))return 'Balance: Not configured';
+ try{
+   const data=BALANCE_OF_SELECTOR+targetAccount.slice(2).toLowerCase().padStart(64,'0');
+   const [balanceHex,decimalsHex]=await Promise.all([
+     targetWallet.request({method:'eth_call',params:[{to:address,data},'latest']}),
+     targetWallet.request({method:'eth_call',params:[{to:address,data:DECIMALS_SELECTOR},'latest']})
+   ]);
+   if(!valid())return null;
+   if(!/^0x[0-9a-f]+$/i.test(balanceHex)||!/^0x[0-9a-f]+$/i.test(decimalsHex))throw new Error('Invalid contract response');
+   const decimals=Number(BigInt(decimalsHex));
+   return 'Balance: '+formatUnits(balanceHex,decimals);
+ }catch(e){
+   return valid()?'Balance: unavailable':null;
+ }
+}
+async function readNativeBalance(){
+ if(!wallet||!account)return;
+ const id=++balanceRequestId,targetChain=chain.id,targetAccount=account,targetWallet=wallet;
+ const valid=()=>isCurrentBalanceRequest(id,targetChain,targetAccount,targetWallet);
+ if(chain.vm!=='evm'){
+   nativeWei=null;refreshWalletHeader();
+   status(chain.name+' wallet integration is planned for a later phase.');return;
+ }
+ $('payBalance').textContent='Balance: loading…';
+ $('receiveBalance').textContent='Balance: loading…';
+ const targetPay=pay,targetReceive=receive;
+ try{
+   const walletChainId=parseInt(await targetWallet.request({method:'eth_chainId'}),16);
+   if(id!==balanceRequestId||account!==targetAccount||wallet!==targetWallet||chain.id!==targetChain)return;
+   liveChainId=walletChainId;
+   if(walletChainId!==targetChain){
+     nativeWei=null;refreshWalletHeader();
+     status('Wallet network differs. Select '+chain.name+' in your wallet.');return;
+   }
+   nativeWei=await targetWallet.request({method:'eth_getBalance',params:[targetAccount,'latest']});
+   if(!valid())return;
+   refreshWalletHeader();
+   const [payText,receiveText]=await Promise.all([
+     readOneToken(targetPay,id,targetChain,targetAccount,targetWallet),
+     readOneToken(targetReceive,id,targetChain,targetAccount,targetWallet)
+   ]);
+   if(!valid())return;
+   $('payBalance').textContent=payText||'Balance: unavailable';
+   $('receiveBalance').textContent=receiveText||'Balance: unavailable';
+   status('Read-only balances refreshed. Token support depends on verified contract addresses.');
+ }catch(e){
+   if(id!==balanceRequestId||account!==targetAccount||chain.id!==targetChain||wallet!==targetWallet)return;
+   nativeWei=null;refreshWalletHeader();
+   $('payBalance').textContent='Balance: unavailable';
+   $('receiveBalance').textContent='Balance: unavailable';
+   status('Could not read balances. Check your wallet network or try Refresh.');
+ }
+}
 async function switchChain(){if(!wallet||!chain.id||chain.vm!=='evm')return;try{await wallet.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x'+chain.id.toString(16)}]});liveChainId=chain.id;await readNativeBalance()}catch(e){nativeWei=null;refreshWalletHeader();status(e.code===4902?'This network is not configured in your wallet; add it through your wallet settings.':e.code===4001?'Network switch declined.':(e.message||'Change the network in your wallet to continue.'))}}
-async function connect(){if(chain.vm!=='evm'){status('This network is shown in the design, but wallet connection for '+chain.name+' is not enabled yet.');return}const p=provider();if(!p){status('No wallet detected. Open this HTTPS page inside Trust Wallet or MetaMask mobile DApp browser.');return}try{status('Waiting for wallet permission…');const accounts=await p.request({method:'eth_requestAccounts'});if(!accounts?.[0]){status('No account was selected.');return}wallet=p;account=accounts[0];liveChainId=parseInt(await p.request({method:'eth_chainId'}),16);refreshWalletHeader();if(liveChainId!==chain.id){status('Connected. Switch to '+chain.name+' to read the native balance.');await switchChain()}else await readNativeBalance()}catch(e){status(e.code===4001?'Wallet connection declined.':(e.message||'Wallet connection failed.'))}}
-$('walletButton').onclick=()=>account?showModal('Wallet connection',[{label:shortAddress(account),description:'Connected address',disabled:true,select:()=>{}},{label:'Refresh native balance',description:chain.vm==='evm'?'Refresh current EVM native balance':'Not available on this network yet',disabled:chain.vm!=='evm',select:readNativeBalance},{label:'Disconnect from this page',select:resetWallet}]):connect();$('disconnectButton').onclick=resetWallet;
+async function connect(){if(chain.vm!=='evm'){status('This network is shown in the design, but wallet connection for '+chain.name+' is not enabled yet.');return}const p=provider();if(!p){status('No wallet detected. Open this HTTPS page inside Trust Wallet or MetaMask mobile DApp browser.');return}try{status('Waiting for wallet permission…');const accounts=await p.request({method:'eth_requestAccounts'});if(!accounts?.[0]){status('No account was selected.');return}wallet=p;account=accounts[0];liveChainId=parseInt(await p.request({method:'eth_chainId'}),16);refreshWalletHeader();if(liveChainId!==chain.id){status('Connected. Switch to '+chain.name+' to read balances.');await switchChain()}else await readNativeBalance()}catch(e){status(e.code===4001?'Wallet connection declined.':(e.message||'Wallet connection failed.'))}}
+$('walletButton').onclick=()=>account?showModal('Wallet connection',[{label:shortAddress(account),description:'Connected address',disabled:true,select:()=>{}},{label:'Refresh balances',description:chain.vm==='evm'?'Refresh current EVM native balance':'Not available on this network yet',disabled:chain.vm!=='evm',select:readNativeBalance},{label:'Disconnect from this page',select:resetWallet}]):connect();$('disconnectButton').onclick=resetWallet;
 $('swapButton').onclick=()=>status(chain.vm==='evm'?'Trading remains disabled in this private preview.':'This network has been added visually; swap support comes later.');
-if(window.ethereum){const p=provider();p?.on?.('accountsChanged',accounts=>{if(!accounts?.length){resetWallet();return}if(wallet){account=accounts[0];readNativeBalance()}});p?.on?.('chainChanged',()=>{if(wallet)readNativeBalance()})}
+if(window.ethereum){const p=provider();p?.on?.('accountsChanged',accounts=>{if(!accounts?.length){resetWallet();return}if(wallet){balanceRequestId++;nativeWei=null;account=accounts[0];readNativeBalance()}});p?.on?.('chainChanged',()=>{balanceRequestId++;nativeWei=null;if(wallet)readNativeBalance()})}
 updateLabels();
 </script>
 </body>
