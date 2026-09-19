@@ -141,9 +141,12 @@ const LIFI_QUOTE_URL='https://li.quest/v1/quote';
 const NATIVE_TOKEN='0x0000000000000000000000000000000000000000';
 const QUOTE_DEBOUNCE_MS=1000;
 const APXN_FEE_DENOMINATOR=1000n; // 0.10%, display only — not charged
+const GAS_CUSHION_NUMERATOR=13n; // 30% extra on the quoted native gas; not a guarantee
+const GAS_CUSHION_DENOMINATOR=10n;
 let quoteRequestId=0,quoteTimer=null,quoteAbort=null;
 let balanceRequestId=0;
 let payBalanceInfo=null; // Exact raw balance/decimals for current wallet, chain and pay token; never inferred from rounded UI text.
+let quoteGasInfo=null; // Gas data for the exact current LI.FI quote; never a transaction instruction.
 let chain=NETWORKS[0],pay='USDT',receive='BNB',wallet=null,account=null,liveChainId=null,nativeWei=null;
 function status(msg){$('status').textContent=msg||''}
 function networkIconUrl(net){
@@ -215,7 +218,19 @@ function spendCheck(){
  if(amount>balance)return {message:'Insufficient '+pay+' balance: entered amount exceeds your available '+pay+'. Quotes do not prove wallet funds.',good:false};
  if(pay===chain.symbol&&amount===balance)
    return {message:'Do not spend all '+pay+': keep the network coin for gas. Use MAX to leave a rough reserve.',good:false};
- return {message:'Amount is within the displayed balance. Gas and any execution-time fees still need separate checks; swaps remain disabled.',good:true};
+ const quoted=quoteGasInfo;
+ if(!quoted||quoted.chainId!==chain.id||quoted.account!==account||quoted.source!==pay||quoted.target!==receive||quoted.rawAmount!==amount.toString())
+   return {message:'Amount is within the displayed balance. Waiting for a matching LI.FI gas estimate; swaps remain disabled.',good:false};
+ if(quoted.gasRaw===null)
+   return {message:'LI.FI gas could not be verified in '+chain.symbol+'. Quote is informational only; swaps remain disabled.',good:false};
+ if(nativeWei===null)
+   return {message:'Native '+chain.symbol+' balance is unavailable. Gas cannot be validated.',good:false};
+ const nativeAvailable=BigInt(nativeWei);
+ const nativeAfterSpend=pay===chain.symbol?nativeAvailable-amount:nativeAvailable;
+ const gasWithCushion=(quoted.gasRaw*GAS_CUSHION_NUMERATOR+GAS_CUSHION_DENOMINATOR-1n)/GAS_CUSHION_DENOMINATOR;
+ if(nativeAfterSpend<gasWithCushion)
+   return {message:'Insufficient '+chain.symbol+' for estimated network gas plus a 30% cushion. Lower the swap amount or add '+chain.symbol+'. Quote is informational only.',good:false};
+ return {message:'Amount and estimated native gas (+30% cushion) fit current balances. Gas can change; swaps remain disabled.',good:true};
 }
 function refreshSpendValidation(){
  const el=$('spendWarning'),state=spendCheck();
@@ -243,6 +258,7 @@ function clearQuote(message){
  if(quoteAbort){quoteAbort.abort();quoteAbort=null;}
  $('receiveAmount').value='';
  $('quotePanel').hidden=true;
+ quoteGasInfo=null;
  $('quoteFeedback').textContent=message||'';
 }
 function scheduleQuote(){
@@ -268,6 +284,21 @@ function getQuoteTokenAddress(net,symbol){
 }
 function quoteIsCurrent(id,netId,addr,source,target){
  return id===quoteRequestId && account===addr && chain.id===netId && liveChainId===netId && pay===source && receive===target;
+}
+function nativeGasEstimate(costs,chainId){
+ // LI.FI gasCosts[].amount is an integer in the gas token's smallest units.
+ // Fail closed if any gas component cannot be verified as this chain's native token.
+ if(!Array.isArray(costs)||!costs.length)return null;
+ let total=0n;
+ for(const cost of costs){
+   const token=cost?.token;
+   const nativeAddress=String(token?.address||'').toLowerCase();
+   if(Number(token?.chainId)!==chainId||Number(token?.decimals)!==18||
+      (nativeAddress!==NATIVE_TOKEN&&nativeAddress!=='0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee')||
+      !/^\d+$/.test(String(cost?.amount)))return null;
+   total+=BigInt(cost.amount);
+ }
+ return total>0n?total:null;
 }
 function sumUsd(costs){
  if(!Array.isArray(costs)||!costs.length)return 'Not reported';
@@ -329,6 +360,9 @@ async function fetchLiveQuote(id){
    $('quoteMinimum').textContent=minimum==='Not reported'?minimum:minimum+' '+target;
    $('quoteRoute').textContent=String(result.toolDetails?.name||result.tool||'LI.FI').slice(0,80);
    $('quoteGas').textContent=sumUsd(result.estimate.gasCosts);
+   // Compare precise native units, never the rounded USD display or provider fees.
+   quoteGasInfo={chainId:selected.id,account:addr,source,target,rawAmount:fromAmount,
+     gasRaw:nativeGasEstimate(result.estimate.gasCosts,selected.id)};
    $('quoteProviderFees').textContent=sumUsd(result.estimate.feeCosts);
    const feeRaw=BigInt(fromAmount)/APXN_FEE_DENOMINATOR;
    const feeToken=feeRaw===0n?'< smallest token unit':formatUnits(feeRaw,decimals,8);
@@ -339,10 +373,12 @@ async function fetchLiveQuote(id){
    $('quoteApxnFeeUsd').textContent=result.action.fromToken?.priceUSD!=null && Number.isFinite(usdPrice) && usdPrice>0 && Number.isFinite(feeAmountNumber)
      ?'≈ $'+(feeAmountNumber*usdPrice).toFixed(4)+' (not charged)':'Not reported (not charged)';
    $('quotePanel').hidden=false;
+   refreshSpendValidation();
    $('quoteFeedback').textContent='Live LI.FI estimate received • '+new Date().toLocaleTimeString()+'. Read-only.';
  }catch(e){
    if(!valid())return;
    $('receiveAmount').value='';$('quotePanel').hidden=true;
+   quoteGasInfo=null;refreshSpendValidation();
    $('quoteFeedback').textContent=e.name==='AbortError'?'Quote request timed out. Try again.':(e instanceof TypeError?'Could not contact LI.FI. Check your network and browser.':String(e.message||'Quote unavailable.'));
  }finally{
    clearTimeout(timeout);
@@ -459,3 +495,4 @@ updateLabels();
 </script>
 </body>
 </html>
+
