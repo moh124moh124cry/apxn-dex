@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#10112b">
+<meta name="robots" content="noindex,nofollow">
+<title>APXN DEX — Multichain Preview</title>
+<style>
+:root{color-scheme:dark;--navy:#0b1024;--panel:#181d3c;--line:#40476f;--purple:#865bfa;--blue:#219dfd;--yellow:#ffdc52;--ink:#f5f7ff;--muted:#aab3d1}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse 65% 47% at 15% 10%,#32207766,transparent 75%),radial-gradient(ellipse 60% 46% at 85% 86%,#025aa34d,transparent 75%),#0b1024;color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif}
+button,input{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.62}button:focus-visible,input:focus-visible{outline:2px solid var(--yellow);outline-offset:3px}
+header{min-height:78px;border-bottom:1px solid #5663a035;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px max(22px,calc((100vw - 1120px)/2));background:#0e152ac9}
+main{width:min(1120px,calc(100% - 32px));margin:48px auto 64px;display:grid;grid-template-columns:minmax(0,.9fr) minmax(350px,1.1fr);gap:46px;align-items:center}
+.brand{display:flex;gap:12px;align-items:center;text-decoration:none;color:inherit}.brand-mark,.apxn-logo{background:#050b1d;border-radius:50%;object-fit:contain;border:2px solid #6aa0ff75}.brand-mark{width:50px;height:50px}.brand strong{display:block;font-size:22px;letter-spacing:.14em}.brand small{display:block;color:#b3bdff;letter-spacing:.17em;font-size:10px}
+.header-actions{display:flex;gap:10px;align-items:center}.pill{padding:10px 14px;border:1px solid #7066b2;border-radius:15px;background:#24264e;color:#f8f9ff;font-size:13px}.connect{border:2px solid #fff1a2;background:linear-gradient(125deg,#ffe66c,#ffcd36);color:#1b1740;box-shadow:0 0 23px #fbd35640;padding:11px 18px;border-radius:15px;font-weight:800;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.headline .eyebrow{color:var(--yellow);text-transform:uppercase;letter-spacing:.2em;font-size:12px;font-weight:800}.headline h1{font-size:clamp(38px,5vw,66px);letter-spacing:-.05em;line-height:1.04;margin:18px 0}.headline h1 span{background:linear-gradient(95deg,#62c8ff,#b992ff);background-clip:text;-webkit-background-clip:text;color:transparent}.headline p{color:#bfcae6;font-size:17px;line-height:1.7;max-width:430px}.feature{display:flex;gap:11px;align-items:center;padding:12px 0;color:#d9ddff;font-size:14px}.dot{width:9px;height:9px;background:var(--yellow);border-radius:50%;box-shadow:0 0 12px #ffdf7b9c}
+.apxn-card{display:flex;align-items:center;gap:12px;max-width:410px;background:#141b36;border:1px solid #3b456e;border-radius:19px;padding:12px 15px;margin-top:25px}.apxn-logo{width:43px;height:43px}.apxn-card strong{display:block}.apxn-card small{color:var(--muted)}.lock{margin-left:auto;color:#ffe078;background:#4e4027;border-radius:99px;padding:7px 9px;font-size:11px;font-weight:800;white-space:nowrap}
+.swap{border:1px solid #6b75b4;background:linear-gradient(160deg,#222249ef,#101b34f7 70%);border-radius:30px;padding:25px;box-shadow:0 28px 80px #0009,0 0 0 5px #7f6bf009}.swap h2{font-size:25px;margin:0 0 5px}.sub{color:var(--muted);margin:0 0 20px;font-size:13px}
+.network-button{width:100%;display:flex;align-items:center;gap:10px;border-radius:16px;background:#22264c;border:1px solid #9a88ea76;color:#fff;padding:11px 13px;text-align:left;margin-bottom:15px}.network-button small{margin-left:auto;color:#fbe48c;font-size:12px}.network-logo,.coin-logo,.badge-logo{object-fit:cover;background:#142142;flex:none;border:1px solid #ffffff50}.network-logo,.coin-logo{border-radius:50%}.network-logo{width:29px;height:29px}.coin-logo{width:44px;height:44px}.badge-logo{width:20px;height:20px;border-radius:50%;position:absolute;right:-3px;bottom:-3px;background:#0b1024;border:2px solid #0b1024;box-shadow:0 0 0 1px #ffe06a8c}
+.field{border:1px solid #535b86;border-radius:20px;padding:14px;margin:10px 0;background:#151d3a}.row{display:flex;align-items:center;justify-content:space-between;gap:10px}.hint{font-size:12px;color:#b8c2e5}.amount{min-width:0;width:100%;background:none;border:0;color:#fff;font-size:clamp(23px,3vw,33px);font-weight:700;outline:none}.amount::placeholder{color:#7b86a8}
+.coin-select{flex:none;min-width:210px;display:flex;gap:10px;align-items:center;justify-content:space-between;border:1px solid #7479b1;border-radius:30px;background:#2b315d;color:white;padding:7px 10px;font-weight:800;text-align:left}.token-stack{position:relative;display:inline-flex;align-items:center;justify-content:center}.coin-meta{display:flex;flex-direction:column;min-width:0;align-items:flex-start;line-height:1.1}.coin-meta span{font-size:13px}.coin-meta small{font-size:10px;color:#b9c4ee;font-weight:700;letter-spacing:.01em;margin-top:4px}.coin-main{font-size:13px;font-weight:800}.coin-select .left{display:flex;align-items:center;gap:10px;min-width:0}.chev{margin-left:8px;font-size:16px;color:#f4e7a3}
+.middle{display:flex;justify-content:center;margin:-2px 0}.reverse{border:2px solid var(--yellow);color:var(--yellow);background:#262650;border-radius:50%;height:43px;width:43px;font-size:24px}
+.fee{display:flex;justify-content:space-between;align-items:center;color:#c9d2eb;font-size:13px;margin:18px 2px}.fee strong{color:#ffe06a;font-size:18px}.swap-action{width:100%;padding:16px;background:linear-gradient(100deg,#fff078,#ffce39);border:2px solid #ffefa8;border-radius:17px;font-weight:900;color:#21183b;font-size:17px;box-shadow:0 0 18px #ffdc5236}.foot{margin-top:12px;font-size:12px;color:var(--muted);line-height:1.5;text-align:center}.notice{border-radius:14px;border:1px solid #5767a0;padding:11px 12px;background:#1b2750;color:#d4e0ff;font-size:12px;margin-top:14px;line-height:1.5}.status{margin-top:8px;min-height:18px;font-size:12px;color:#ffe88b}
+.modal-layer{position:fixed;inset:0;z-index:20;background:#020715c9;display:none;align-items:center;justify-content:center;padding:20px}.modal-layer.open{display:flex}.modal{background:#181d3c;border:1px solid #7178ae;box-shadow:0 24px 80px #000d;width:min(440px,100%);max-height:80vh;overflow:auto;border-radius:22px;padding:18px}.modal h3{margin:0}.close{border:0;background:transparent;color:#fff;font-size:26px}.option{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:#232a50;border:1px solid #49547d;border-radius:15px;margin-top:9px;padding:10px 12px;color:white}.option:disabled{opacity:.48}.option strong{font-size:14px}.option small{display:block;color:#aeb8d2;font-size:11px;margin-top:3px}.option .end{margin-left:auto;color:#ffe07b;font-size:12px}.option .token-stack{margin-right:2px}
+.wallet-details{font-size:13px;color:#d3d9ef;padding:8px 0;display:none}.wallet-details.on{display:block}.wallet-details strong{color:#ffdf69}.wallet-details button{border:1px solid #726ead;background:#22284c;color:white;padding:6px 10px;border-radius:10px;margin-top:7px}
+footer{margin:28px auto;text-align:center;color:#7e8db5;font-size:12px;padding:0 20px}
+@media (max-width:930px){main{grid-template-columns:1fr;gap:26px}.headline{order:2}.swap{order:1}}@media (max-width:540px){header{padding-inline:16px}.brand strong{font-size:18px}.connect{padding:10px 14px}.swap{padding:16px;border-radius:24px}.field{padding:12px}.row.mobile-stack{align-items:stretch;flex-direction:column}.coin-select{width:100%;min-width:0}.coin-logo{width:40px;height:40px}}
+</style>
+</head>
+<body>
+<header>
+<a class="brand" href="#" aria-label="APXN DEX home">
+<img class="brand-mark" src="https://apxn.network/logo2%20(1).png" alt="APXN logo">
+<span><strong>APXN</strong><small>DEX</small></span>
+</a>
+<div class="header-actions"><span class="pill">🧪 Private Preview</span><button class="connect" id="walletButton" type="button">Connect Wallet</button></div>
+</header>
+<main>
+<section class="headline">
+<div class="eyebrow">Simple • Fast • Decentralized</div>
+<h1>Swap with a <span>clean APXN experience</span></h1>
+<p>A simple exchange layout: connect wallet, choose network, choose token, view balances, and start your swap without unnecessary steps.</p>
+<div class="feature"><span class="dot"></span><span>Blue and purple APXN look with attractive yellow-highlighted actions.</span></div>
+<div class="feature"><span class="dot"></span><span>0.10% planned APXN platform fee.</span></div>
+<div class="feature"><span class="dot"></span><span>APXN Network and APXN token remain visible as coming soon.</span></div>
+<div class="apxn-card"><img class="apxn-logo" src="https://apxn.network/logo2%20(1).png" alt="APXN"><div><strong>APXN / APXN Network</strong><small>Visible in the interface, not tradable yet.</small></div><span class="lock">🔒 Coming Soon</span></div>
+</section>
+<section class="swap" aria-label="Swap interface">
+<h2>APXN DEX</h2>
+<p class="sub">Multichain design preview • wallet and native balance on EVM only</p>
+<button type="button" class="network-button" id="networkButton"><img class="network-logo" id="networkIcon" alt="BNB Smart Chain" src="https://raw.githubusercontent.com/0xa3k5/web3icons/main/packages/core/src/svgs/networks/background/binance-smart-chain.svg"><strong id="networkName">BNB Smart Chain</strong><small>Change ▾</small></button>
+<div class="wallet-details" id="walletDetails"><div class="row"><span>Wallet: <strong id="walletAddress">—</strong></span><span id="walletBalance">—</span></div><div><button id="disconnectButton" type="button">Disconnect from page</button></div></div>
+<div class="field"><div class="row hint"><span>You pay</span><span id="payBalance">Balance: —</span></div><div class="row mobile-stack" style="margin-top:12px"><input class="amount" id="payAmount" inputmode="decimal" aria-label="Amount to pay" placeholder="0.0"><button class="coin-select" id="payCoin" type="button"><span class="left"><span class="token-stack"><img class="coin-logo" id="payIcon" alt="USDT"><img class="badge-logo" id="payBadge" alt="BNB Smart Chain"></span><span class="coin-meta"><span class="coin-main" id="paySymbol">USDT</span><small id="payNetworkTag">BNB Smart Chain</small></span></span><span class="chev">⌄</span></button></div></div>
+<div class="middle"><button class="reverse" id="reverseButton" type="button" aria-label="Reverse pair">↕</button></div>
+<div class="field"><div class="row hint"><span>You receive</span><span id="receiveBalance">Balance: —</span></div><div class="row mobile-stack" style="margin-top:12px"><input class="amount" id="receiveAmount" aria-label="Estimated receive amount" placeholder="—" readonly><button class="coin-select" id="receiveCoin" type="button"><span class="left"><span class="token-stack"><img class="coin-logo" id="receiveIcon" alt="BNB"><img class="badge-logo" id="receiveBadge" alt="BNB Smart Chain"></span><span class="coin-meta"><span class="coin-main" id="receiveSymbol">BNB</span><small id="receiveNetworkTag">BNB Smart Chain</small></span></span><span class="chev">⌄</span></button></div></div>
+<div class="fee"><span>APXN planned fee</span><strong>0.10%</strong></div>
+<button class="swap-action" id="swapButton" type="button">Start Swap</button>
+<div class="status" id="status"></div>
+<div class="notice">Native balance can be read for supported EVM wallets on EVM networks. Each token has its own logo and a small network badge. NEAR and TON can be selected for preview; connecting their wallets and swapping on them are not enabled yet.</div>
+<div class="foot">Network gas and liquidity-provider fees are separate from the planned APXN platform fee.</div>
+</section>
+</main>
+<footer>APXN DEX • Independent testing project • Not connected to the APXN mining balance</footer>
+<div class="modal-layer" id="modalLayer" role="presentation"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="row"><h3 id="modalTitle">Select</h3><button class="close" id="closeModal" type="button" aria-label="Close">×</button></div><div id="modalOptions"></div></div></div>
+<script>
+'use strict';
+const NETWORK_ICON_BASE='https://raw.githubusercontent.com/0xa3k5/web3icons/main/packages/core/src/svgs/networks/background/';
+const TOKEN_ICON_BASE='https://raw.githubusercontent.com/0xa3k5/web3icons/main/packages/core/src/svgs/tokens/background/';
+const APXN_ICON='https://apxn.network/logo2%20(1).png';
+const NETWORKS=[
+ {id:56,name:'BNB Smart Chain',symbol:'BNB',icon:'binance-smart-chain',vm:'evm',tokens:['BNB','USDT','USDC','DAI','ETH','BTCB','CAKE','FDUSD','TWT','XVS']},
+ {id:1,name:'Ethereum',symbol:'ETH',icon:'ethereum',vm:'evm',tokens:['ETH','USDT','USDC','DAI','WETH','WBTC','UNI','LINK','AAVE','LDO','PEPE']},
+ {id:8453,name:'Base',symbol:'ETH',icon:'base',vm:'evm',tokens:['ETH','USDC','WETH','DAI','AERO','BRETT','cbBTC','DEGEN','MORPHO']},
+ {id:42161,name:'Arbitrum One',symbol:'ETH',icon:'arbitrum-one',vm:'evm',tokens:['ETH','USDC','USDT','WETH','WBTC','ARB','GMX','DAI','LINK']},
+ {id:137,name:'Polygon PoS',symbol:'POL',icon:'polygon',vm:'evm',tokens:['POL','USDC','USDT','WETH','WBTC','DAI','AAVE','LINK','QUICK']},
+ {id:10,name:'OP Mainnet',symbol:'ETH',icon:'optimism',vm:'evm',tokens:['ETH','USDC','USDT','WETH','WBTC','OP','DAI','SNX']},
+ {id:43114,name:'Avalanche C-Chain',symbol:'AVAX',icon:'avalanche',vm:'evm',tokens:['AVAX','USDC','USDT','WETH','WBTC','JOE','AAVE']},
+ {id:204,name:'opBNB',symbol:'BNB',icon:'binance-smart-chain',vm:'evm',tokens:['BNB','USDT','USDC','WBNB']},
+ {id:59144,name:'Linea',symbol:'ETH',icon:'linea',vm:'evm',tokens:['ETH','USDC','USDT','WETH','DAI']},
+ {id:534352,name:'Scroll',symbol:'ETH',icon:'scroll',vm:'evm',tokens:['ETH','USDC','USDT','WETH','DAI']},
+ {id:324,name:'ZKsync Era',symbol:'ETH',icon:'zksync',vm:'evm',tokens:['ETH','USDC','USDT','WETH','ZK']},
+ {id:5000,name:'Mantle',symbol:'MNT',icon:'mantle',vm:'evm',tokens:['MNT','USDT','USDC','WETH','WMNT']},
+ {id:100,name:'Gnosis',symbol:'xDAI',icon:'gnosis',vm:'evm',tokens:['xDAI','USDC','USDT','WETH','GNO']},
+ {id:42220,name:'Celo',symbol:'CELO',icon:'celo',vm:'evm',tokens:['CELO','USDC','USDT','cUSD','cEUR']},
+ {id:146,name:'Sonic',symbol:'S',icon:'sonic',vm:'evm',tokens:['S','USDC','USDT','WETH']},
+ {id:'near-mainnet',name:'NEAR',symbol:'NEAR',icon:'near',vm:'near',tokens:['NEAR','USDT','USDC']},
+ {id:'ton-mainnet',name:'TON',symbol:'TON',icon:'ton',vm:'ton',tokens:['TON','USDT','USDC']},
+ {id:null,name:'APXN Network',symbol:'APXN',icon:null,vm:'apxn',tokens:['APXN'],locked:true}
+];
+// Asset paths use web3icons' verified token symbol convention: e.g. USDT.svg, ETH.svg.
+// Wrapped and bridged assets keep the parent asset logo in this visual preview.
+const TOKEN_ICON_MAP={
+  'BTCB':'BTC','cbBTC':'BTC','WETH':'ETH','WBTC':'BTC','WBNB':'BNB',
+  'WMNT':'MNT','xDAI':'DAI','cUSD':'CUSD','cEUR':'CEUR',
+  'POL':'POL','APXN':'APXN'
+};
+const $=id=>document.getElementById(id);
+let chain=NETWORKS[0],pay='USDT',receive='BNB',wallet=null,account=null,liveChainId=null,nativeWei=null;
+function status(msg){$('status').textContent=msg||''}
+function networkIconUrl(net){
+  if(net.locked) return APXN_ICON;
+  // NEAR and TON have first-party network logo artwork in the same library as our EVM logos.
+  const networkAsset=net.icon==='near'?'near-protocol':net.icon;
+  return NETWORK_ICON_BASE+networkAsset+'.svg';
+}
+function tokenIconUrl(symbol, net){
+  if(symbol==='APXN') return APXN_ICON;
+  // An ETH token on Base/Arbitrum must display Ethereum's token mark, not the Base/Arbitrum mark.
+  // The separate small badge identifies the selected chain.
+  if(symbol==='NEAR' && net.vm==='near') return networkIconUrl(net);
+  if(symbol==='TON' && net.vm==='ton') return networkIconUrl(net);
+  const key=TOKEN_ICON_MAP[symbol] || symbol.toUpperCase();
+  return TOKEN_ICON_BASE+key+'.svg';
+}
+function fallbackImage(img, text, bg){img.onerror=null;img.src='data:image/svg+xml;utf8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" rx="32" fill="${bg}"/><text x="50%" y="53%" dominant-baseline="middle" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="22" font-weight="700" fill="white">${text}</text></svg>`)}
+function setImg(el, src, fallbackText, bg='#384780'){ el.src=src; el.onerror=()=>fallbackImage(el, fallbackText.slice(0,4).toUpperCase(), bg); }
+function setTokenView(prefix, symbol){
+ setImg($(prefix+'Icon'), tokenIconUrl(symbol, chain), symbol, '#2f4ca0');
+ setImg($(prefix+'Badge'), networkIconUrl(chain), chain.symbol || chain.name.slice(0,2), '#0f1634');
+ $(prefix+'Symbol').textContent=symbol;
+ $(prefix+'NetworkTag').textContent=chain.name;
+ $(prefix+'Icon').alt=symbol;
+ $(prefix+'Badge').alt=chain.name;
+}
+function showModal(title,items){$('modalTitle').textContent=title;const root=$('modalOptions');root.replaceChildren();items.forEach(o=>{const btn=document.createElement('button');btn.type='button';btn.className='option';btn.disabled=!!o.disabled;if(o.icon || o.badge){const wrap=document.createElement('span');wrap.className='token-stack';const image=document.createElement('img');image.className='coin-logo';setImg(image,o.icon||o.badge,o.label,'#34457a');image.alt='';wrap.append(image);if(o.badge){const badge=document.createElement('img');badge.className='badge-logo';setImg(badge,o.badge,o.description||'', '#0f1634');badge.alt='';wrap.append(badge)}btn.append(wrap)}else{const circle=document.createElement('span');circle.className='coin-logo';circle.style.cssText='display:grid;place-items:center;color:#ffe37e;font-weight:900';circle.textContent=o.label.slice(0,2);btn.append(circle)}const holder=document.createElement('span');const label=document.createElement('strong');label.textContent=o.label;holder.append(label);if(o.description){const sub=document.createElement('small');sub.textContent=o.description;holder.append(sub)}btn.append(holder);if(o.end){const end=document.createElement('span');end.className='end';end.textContent=o.end;btn.append(end)}btn.addEventListener('click',()=>{closeModal();o.select()});root.append(btn)});$('modalLayer').classList.add('open')}
+function closeModal(){$('modalLayer').classList.remove('open')}
+$('closeModal').onclick=closeModal;$('modalLayer').addEventListener('click',e=>{if(e.target===$('modalLayer'))closeModal()});document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+function updateLabels(){
+ pay=chain.tokens.includes(pay)?pay:chain.tokens[0];
+ receive=chain.tokens.includes(receive)&&receive!==pay?receive:(chain.tokens.find(t=>t!==pay)||pay);
+ $('networkName').textContent=chain.name; setImg($('networkIcon'), networkIconUrl(chain), chain.symbol||chain.name.slice(0,2), '#223057'); $('networkIcon').alt=chain.name;
+ setTokenView('pay', pay); setTokenView('receive', receive);
+ $('receiveAmount').value='';$('payBalance').textContent='Balance: —';$('receiveBalance').textContent='Balance: —';refreshWalletHeader();
+}
+$('networkButton').onclick=()=>showModal('Choose network',NETWORKS.map(n=>({label:n.name,description:n.locked?'Planned network — not available yet':(n.vm==='evm'?'EVM network • Chain ID '+n.id:(n.vm.toUpperCase()+' network • wallet integration next phase')),icon:networkIconUrl(n),disabled:n.locked,end:n.locked?'🔒 Soon':(n.vm==='evm'?'':'Soon'),select:async()=>{chain=n;pay=n.tokens.includes('USDT')?'USDT':n.tokens[0];receive=n.tokens.find(t=>t!==pay)||pay;updateLabels();if(chain.vm!=='evm'){nativeWei=null;status(chain.name+' added to the design. Wallet connection for this network comes in a later phase.');return}if(account&&liveChainId!==chain.id){status('Switching wallet network…');await switchChain()}else if(account){await readNativeBalance()}else{status('')}}})));
+function chooseToken(which){const other=which==='pay'?receive:pay;const items=chain.tokens.map(t=>({label:t,description:'On '+chain.name,icon:tokenIconUrl(t,chain),badge:networkIconUrl(chain),end:t===other?'Selected':'',disabled:t===other,select:()=>{if(which==='pay')pay=t;else receive=t;updateLabels();if(account)readNativeBalance()}})); if(!chain.tokens.includes('APXN')) items.push({label:'APXN',description:'Coming soon — disabled',disabled:true,end:'🔒 Soon',icon:APXN_ICON,badge:networkIconUrl(chain),select:()=>{}}); showModal('Choose token', items)}
+$('payCoin').onclick=()=>chooseToken('pay');$('receiveCoin').onclick=()=>chooseToken('receive');$('reverseButton').onclick=()=>{[pay,receive]=[receive,pay];updateLabels();if(account)readNativeBalance()};$('payAmount').addEventListener('input',()=>{$('receiveAmount').value='';status('Real quotes will be enabled after wallet and API testing.')});
+function shortAddress(a){return a?a.slice(0,6)+'…'+a.slice(-4):'—'}
+function provider(){const eth=window.ethereum;if(!eth)return null;if(Array.isArray(eth.providers)&&eth.providers.length){return eth.providers.find(p=>p.isTrust)||eth.providers.find(p=>p.isMetaMask)||eth.providers[0]}return eth}
+function resetWallet(){wallet=null;account=null;liveChainId=null;nativeWei=null;$('walletDetails').classList.remove('on');$('walletButton').textContent='Connect Wallet';$('payBalance').textContent='Balance: —';$('receiveBalance').textContent='Balance: —';status('Disconnected from this page. Revoke permission in your wallet if needed.')}
+function ethFormatted(hex){const v=BigInt(hex),unit=10n**18n;const whole=v/unit;let frac=(v%unit).toString().padStart(18,'0').slice(0,5).replace(/0+$/,'');return whole.toString()+(frac?'.'+frac:'')}
+function refreshWalletHeader(){if(!account){$('walletDetails').classList.remove('on');return}$('walletDetails').classList.add('on');$('walletAddress').textContent=shortAddress(account);$('walletButton').textContent=shortAddress(account);if(chain.vm!=='evm'){$('walletBalance').textContent='EVM wallet only';$('payBalance').textContent='Balance: —';$('receiveBalance').textContent='Balance: —';return}if(liveChainId!==chain.id){$('walletBalance').textContent='Different network';$('payBalance').textContent='Balance: —';$('receiveBalance').textContent='Balance: —'}else if(nativeWei!==null){$('walletBalance').textContent=ethFormatted(nativeWei)+' '+chain.symbol;$('payBalance').textContent=pay===chain.symbol?'Balance: '+ethFormatted(nativeWei):'Balance: —';$('receiveBalance').textContent=receive===chain.symbol?'Balance: '+ethFormatted(nativeWei):'Balance: —'}}
+async function readNativeBalance(){if(!wallet||!account)return;if(chain.vm!=='evm'){status(chain.name+' wallet integration is planned for a later phase.');return}try{liveChainId=parseInt(await wallet.request({method:'eth_chainId'}),16);if(liveChainId!==chain.id){nativeWei=null;refreshWalletHeader();status('Wallet network differs. Select this network in your wallet.');return}nativeWei=await wallet.request({method:'eth_getBalance',params:[account,'latest']});refreshWalletHeader();status('Connected. Native balance is live; token balances and swaps come next.')}catch(e){status(e.message||'Could not read wallet balance')}}
+async function switchChain(){if(!wallet||!chain.id||chain.vm!=='evm')return;try{await wallet.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x'+chain.id.toString(16)}]});liveChainId=chain.id;await readNativeBalance()}catch(e){nativeWei=null;refreshWalletHeader();status(e.code===4902?'This network is not configured in your wallet; add it through your wallet settings.':e.code===4001?'Network switch declined.':(e.message||'Change the network in your wallet to continue.'))}}
+async function connect(){if(chain.vm!=='evm'){status('This network is shown in the design, but wallet connection for '+chain.name+' is not enabled yet.');return}const p=provider();if(!p){status('No wallet detected. Open this HTTPS page inside Trust Wallet or MetaMask mobile DApp browser.');return}try{status('Waiting for wallet permission…');const accounts=await p.request({method:'eth_requestAccounts'});if(!accounts?.[0]){status('No account was selected.');return}wallet=p;account=accounts[0];liveChainId=parseInt(await p.request({method:'eth_chainId'}),16);refreshWalletHeader();if(liveChainId!==chain.id){status('Connected. Switch to '+chain.name+' to read the native balance.');await switchChain()}else await readNativeBalance()}catch(e){status(e.code===4001?'Wallet connection declined.':(e.message||'Wallet connection failed.'))}}
+$('walletButton').onclick=()=>account?showModal('Wallet connection',[{label:shortAddress(account),description:'Connected address',disabled:true,select:()=>{}},{label:'Refresh native balance',description:chain.vm==='evm'?'Refresh current EVM native balance':'Not available on this network yet',disabled:chain.vm!=='evm',select:readNativeBalance},{label:'Disconnect from this page',select:resetWallet}]):connect();$('disconnectButton').onclick=resetWallet;
+$('swapButton').onclick=()=>status(chain.vm==='evm'?'Trading remains disabled in this private preview.':'This network has been added visually; swap support comes later.');
+if(window.ethereum){const p=provider();p?.on?.('accountsChanged',accounts=>{if(!accounts?.length){resetWallet();return}if(wallet){account=accounts[0];readNativeBalance()}});p?.on?.('chainChanged',()=>{if(wallet)readNativeBalance()})}
+updateLabels();
+</script>
+</body>
+</html>
