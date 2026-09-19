@@ -140,11 +140,15 @@ const DECIMALS_SELECTOR='0x313ce567';   // decimals()
 const LIFI_QUOTE_URL='https://li.quest/v1/quote';
 const NATIVE_TOKEN='0x0000000000000000000000000000000000000000';
 const QUOTE_DEBOUNCE_MS=1000;
+// V9: local freshness policy for the read-only preview; LI.FI does not guarantee this quote stays executable.
+const QUOTE_REFRESH_MS=60000; // Recheck a visible quote no more often than once a minute.
+const QUOTE_REFRESH_CHECK_MS=10000; // Low-overhead age check; no network traffic unless stale.
 const APXN_FEE_DENOMINATOR=1000n; // 0.10%, display only — not charged
 const GAS_CUSHION_NUMERATOR=13n; // 30% extra on the quoted native gas; not a guarantee
 const GAS_CUSHION_DENOMINATOR=10n;
 const MAX_QUOTE_REFINEMENTS=2; // At most three live LI.FI quotes per native MAX click.
 let quoteRequestId=0,quoteTimer=null,quoteAbort=null;
+let quoteUpdatedAt=0,quoteAttemptedAt=0,lastAutoRefreshAt=0; // Date.now timestamps; quote age is not an API expiry.
 let balanceRequestId=0;
 let payBalanceInfo=null; // Exact raw balance/decimals for current wallet, chain and pay token; never inferred from rounded UI text.
 let quoteGasInfo=null; // Gas data for the exact current LI.FI quote; never a transaction instruction.
@@ -282,6 +286,7 @@ function clearQuote(message){
  $('receiveAmount').value='';
  $('quotePanel').hidden=true;
  quoteGasInfo=null;
+ quoteUpdatedAt=0; // Once the exact request changes, the previous estimate is no longer current.
  $('quoteFeedback').textContent=message||'';
 }
 function scheduleQuote(){
@@ -298,6 +303,22 @@ function scheduleQuote(){
  const id=quoteRequestId;
  $('quoteFeedback').textContent='Checking LI.FI quote…';
  quoteTimer=setTimeout(()=>{quoteTimer=null;fetchLiveQuote(id)},QUOTE_DEBOUNCE_MS);
+}
+// Auto-refresh happens only for visible, connected EVM previews with an amount already requested.
+// Before requesting a new LI.FI estimate, re-read the wallet's native/token balances.
+// Hidden tabs do not poll the wallet/API. A focus/visibility event checks the elapsed time.
+function refreshStaleQuote(){
+ if(document.hidden||!wallet||!account||chain.locked||chain.vm!=='evm'||liveChainId!==chain.id||smartMaxState)return;
+ if(!$('payAmount').value.trim()||!getQuoteTokenAddress(chain,pay)||!getQuoteTokenAddress(chain,receive))return;
+ const now=Date.now();
+ // The request timestamp prevents duplicate calls while RPC/API work is in progress and
+ // limits automatic retries after a failed quote. Never start polling an untouched form.
+ const latest=Math.max(quoteUpdatedAt,quoteAttemptedAt,lastAutoRefreshAt);
+ if(!latest||now-latest<QUOTE_REFRESH_MS)return;
+ lastAutoRefreshAt=now;
+ clearQuote('Refreshing wallet balances and LI.FI estimate…'); // Hide the stale amount immediately.
+ refreshSpendValidation();
+ readNativeBalance(); // Existing wallet flow schedules the exact-amount quote after fresh balances.
 }
 function getQuoteTokenAddress(net,symbol){
  if(net.vm!=='evm'||net.locked||symbol==='APXN')return null;
@@ -381,6 +402,7 @@ async function fetchLiveQuote(id){
  if(!valid())return;
  const fromToken=getQuoteTokenAddress(selected,source),toToken=getQuoteTokenAddress(selected,target);
  if(!fromToken||!toToken)return;
+ quoteAttemptedAt=Date.now(); // Record the attempt, including failures, to avoid API retry loops.
  const controller=new AbortController();quoteAbort=controller;
  const timeout=setTimeout(()=>controller.abort(),16000);
  try{
@@ -434,12 +456,13 @@ async function fetchLiveQuote(id){
    $('quoteApxnFeeUsd').textContent=result.action.fromToken?.priceUSD!=null && Number.isFinite(usdPrice) && usdPrice>0 && Number.isFinite(feeAmountNumber)
      ?'≈ $'+(feeAmountNumber*usdPrice).toFixed(4)+' (not charged)':'Not reported (not charged)';
    $('quotePanel').hidden=false;
+   quoteUpdatedAt=Date.now(); // Only a successfully received, matching quote is marked fresh.
    refreshSpendValidation();
    $('quoteFeedback').textContent='Live LI.FI estimate received • '+new Date().toLocaleTimeString()+'. Read-only.';
  }catch(e){
    if(!valid())return;
    $('receiveAmount').value='';$('quotePanel').hidden=true;
-   quoteGasInfo=null;refreshSpendValidation();
+   quoteGasInfo=null;quoteUpdatedAt=0;refreshSpendValidation();
    if(smartMaxState){smartMaxState=null;status('MAX could not be finalized. Try another amount or press MAX again.');}
    $('quoteFeedback').textContent=e.name==='AbortError'?'Quote request timed out. Try again.':(e instanceof TypeError?'Could not contact LI.FI. Check your network and browser.':String(e.message||'Quote unavailable.'));
  }finally{
@@ -553,9 +576,14 @@ async function connect(){if(chain.vm!=='evm'){status('This network is shown in t
 $('walletButton').onclick=()=>account?showModal('Wallet connection',[{label:shortAddress(account),description:'Connected address',disabled:true,select:()=>{}},{label:'Refresh balances',description:chain.vm==='evm'?'Refresh current EVM native balance':'Not available on this network yet',disabled:chain.vm!=='evm',select:readNativeBalance},{label:'Disconnect from this page',select:resetWallet}]):connect();$('disconnectButton').onclick=resetWallet;
 $('swapButton').onclick=()=>status('Read-only preview. No approvals, signatures or swap transactions are implemented.');
 if(window.ethereum){const p=provider();p?.on?.('accountsChanged',accounts=>{smartMaxState=null;clearQuote('Wallet changed: refreshing quote availability.');if(!accounts?.length){resetWallet();return}if(wallet){balanceRequestId++;payBalanceInfo=null;nativeWei=null;account=accounts[0];refreshSpendValidation();readNativeBalance()}});p?.on?.('chainChanged',()=>{smartMaxState=null;clearQuote('Network changed: refreshing quote availability.');balanceRequestId++;payBalanceInfo=null;nativeWei=null;refreshSpendValidation();if(wallet)readNativeBalance()})}
+// No new buttons, panels, transaction methods, fees, or wallet permissions in V9.
+setInterval(refreshStaleQuote,QUOTE_REFRESH_CHECK_MS);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshStaleQuote()});
+window.addEventListener('focus',refreshStaleQuote);
 updateLabels();
 </script>
 </body>
 </html>
+
 
 
