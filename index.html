@@ -143,6 +143,7 @@ const QUOTE_DEBOUNCE_MS=1000;
 // V9: local freshness policy for the read-only preview; LI.FI does not guarantee this quote stays executable.
 const QUOTE_REFRESH_MS=60000; // Recheck a visible quote no more often than once a minute.
 const QUOTE_REFRESH_CHECK_MS=10000; // Low-overhead age check; no network traffic unless stale.
+const QUOTE_READINESS_MAX_AGE_MS=75000; // Local PREVIEW safety window, not a LI.FI promise or executable quote lifetime.
 const APXN_FEE_DENOMINATOR=1000n; // 0.10%, display only — not charged
 const GAS_CUSHION_NUMERATOR=13n; // 30% extra on the quoted native gas; not a guarantee
 const GAS_CUSHION_DENOMINATOR=10n;
@@ -152,6 +153,7 @@ let quoteUpdatedAt=0,quoteAttemptedAt=0,lastAutoRefreshAt=0; // Date.now timesta
 let balanceRequestId=0;
 let payBalanceInfo=null; // Exact raw balance/decimals for current wallet, chain and pay token; never inferred from rounded UI text.
 let quoteGasInfo=null; // Gas data for the exact current LI.FI quote; never a transaction instruction.
+let quoteReadiness=null; // Exact validated quote identity; NEVER transactionRequest or signing data.
 let smartMaxState=null; // Auto-refine native MAX only for this chain, account, token pair and exact balance.
 let chain=NETWORKS[0],pay='USDT',receive='BNB',wallet=null,account=null,liveChainId=null,nativeWei=null;
 function status(msg){$('status').textContent=msg||''}
@@ -225,6 +227,18 @@ function spendCheck(){
  if(amount>balance)return {message:'Insufficient '+pay+' balance: entered amount exceeds your available '+pay+'. Quotes do not prove wallet funds.',good:false};
  if(pay===chain.symbol&&amount===balance)
    return {message:'Do not spend all '+pay+': keep the network coin for gas. Use MAX to leave a rough reserve.',good:false};
+ // A gas quote alone does not establish readiness: confirm the matching LI.FI token,
+ // source amount, recipient, wallet, network and a locally fresh minimum receive.
+ const verified=quoteReadiness;
+ if(!verified||$('quotePanel').hidden||verified.requestId!==quoteRequestId||
+    verified.chainId!==chain.id||verified.account!==account||verified.wallet!==wallet||
+    verified.source!==pay||verified.target!==receive||verified.rawAmount!==amount.toString()||
+    verified.fromToken!==getQuoteTokenAddress(chain,pay)?.toLowerCase()||
+    verified.toToken!==getQuoteTokenAddress(chain,receive)?.toLowerCase()||
+    verified.minRaw<=0n||verified.minRaw>verified.estimatedRaw)
+   return {message:'Waiting for a verified LI.FI preview for this wallet, pair and exact amount. Swaps remain disabled.',good:false};
+ if(!Number.isFinite(quoteUpdatedAt)||quoteUpdatedAt<=0||Date.now()-quoteUpdatedAt>QUOTE_READINESS_MAX_AGE_MS)
+   return {message:'This preview quote is old. Wait for the automatic refresh; swaps remain disabled.',good:false};
  const quoted=quoteGasInfo;
  if(!quoted||quoted.chainId!==chain.id||quoted.account!==account||quoted.source!==pay||quoted.target!==receive||quoted.rawAmount!==amount.toString())
    return {message:'Amount is within the displayed balance. Waiting for a matching LI.FI gas estimate; swaps remain disabled.',good:false};
@@ -237,7 +251,7 @@ function spendCheck(){
  const gasWithCushion=(quoted.gasRaw*GAS_CUSHION_NUMERATOR+GAS_CUSHION_DENOMINATOR-1n)/GAS_CUSHION_DENOMINATOR;
  if(nativeAfterSpend<gasWithCushion)
    return {message:'Insufficient '+chain.symbol+' for estimated network gas plus a 30% cushion. Lower the swap amount or add '+chain.symbol+'. Quote is informational only.',good:false};
- return {message:'Amount and estimated native gas (+30% cushion) fit current balances. Gas can change; swaps remain disabled.',good:true};
+ return {message:'Preview checks passed: verified quote, wallet balances and estimated gas (+30% cushion). Gas can change; swaps remain disabled.',good:true};
 }
 function refreshSpendValidation(){
  const el=$('spendWarning'),state=spendCheck();
@@ -286,6 +300,7 @@ function clearQuote(message){
  $('receiveAmount').value='';
  $('quotePanel').hidden=true;
  quoteGasInfo=null;
+ quoteReadiness=null; // Never carry an old preview confirmation across inputs or wallet/network changes.
  quoteUpdatedAt=0; // Once the exact request changes, the previous estimate is no longer current.
  $('quoteFeedback').textContent=message||'';
 }
@@ -308,6 +323,9 @@ function scheduleQuote(){
 // Before requesting a new LI.FI estimate, re-read the wallet's native/token balances.
 // Hidden tabs do not poll the wallet/API. A focus/visibility event checks the elapsed time.
 function refreshStaleQuote(){
+ // Reassess the preview's local age even if the tab has been suspended.
+ if(quoteReadiness&&quoteUpdatedAt&&Date.now()-quoteUpdatedAt>QUOTE_READINESS_MAX_AGE_MS)
+   refreshSpendValidation();
  if(document.hidden||!wallet||!account||chain.locked||chain.vm!=='evm'||liveChainId!==chain.id||smartMaxState)return;
  if(!$('payAmount').value.trim()||!getQuoteTokenAddress(chain,pay)||!getQuoteTokenAddress(chain,receive))return;
  const now=Date.now();
@@ -328,6 +346,37 @@ function getQuoteTokenAddress(net,symbol){
 }
 function quoteIsCurrent(id,netId,addr,source,target){
  return id===quoteRequestId && account===addr && chain.id===netId && liveChainId===netId && pay===source && receive===target;
+}
+// LI.FI can use 0xeeee... for a native coin in some response representations.
+// For ERC-20s, the EXACT contract on the selected chain must match.
+function normalizedQuoteToken(address){
+ const value=String(address||'').toLowerCase();
+ if(value==='0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee')return NATIVE_TOKEN;
+ return /^0x[0-9a-f]{40}$/.test(value)?value:null;
+}
+function verifyReadOnlyQuote(result,net,fromToken,toToken,fromAmount,fromDecimals,recipient){
+ const action=result?.action,estimate=result?.estimate;
+ if(!action||!estimate)throw new Error('LI.FI quote is incomplete.');
+ const from=action.fromToken,to=action.toToken;
+ if(Number(action.fromChainId)!==net.id||Number(action.toChainId)!==net.id||
+    Number(from?.chainId)!==net.id||Number(to?.chainId)!==net.id||
+    normalizedQuoteToken(from?.address)!==fromToken.toLowerCase()||
+    normalizedQuoteToken(to?.address)!==toToken.toLowerCase()||
+    Number(from?.decimals)!==fromDecimals)
+   throw new Error('LI.FI quote token, decimals or network does not match your selection.');
+ if(String(action.fromAmount)!==fromAmount||
+    (estimate.fromAmount!=null&&String(estimate.fromAmount)!==fromAmount)||
+    (action.fromAddress!=null&&String(action.fromAddress).toLowerCase()!==recipient.toLowerCase())||
+    (action.toAddress!=null&&String(action.toAddress).toLowerCase()!==recipient.toLowerCase()))
+   throw new Error('LI.FI quote amount or wallet address does not match this preview.');
+ const decimalsOut=Number(to.decimals);
+ if(!Number.isInteger(decimalsOut)||decimalsOut<0||decimalsOut>36)
+   throw new Error('LI.FI returned invalid destination decimals.');
+ const estimated=String(estimate.toAmount),minimum=String(estimate.toAmountMin);
+ if(!/^\d+$/.test(estimated)||!/^\d+$/.test(minimum)||
+    BigInt(minimum)<=0n||BigInt(minimum)>BigInt(estimated))
+   throw new Error('LI.FI did not return a valid minimum receive amount.');
+ return {estimated,minimum,decimalsOut};
 }
 function nativeGasEstimate(costs,chainId){
  // LI.FI gasCosts[].amount is an integer in the gas token's smallest units.
@@ -432,10 +481,10 @@ async function fetchLiveQuote(id){
    if(!result?.estimate||!result?.action?.toToken)throw new Error('LI.FI returned an incomplete quote.');
    if(Number(result.action.fromChainId)!==selected.id||Number(result.action.toChainId)!==selected.id)
      throw new Error('LI.FI returned a quote for a different network.');
-   const decimalsOut=Number(result.action.toToken.decimals);
-   if(!Number.isInteger(decimalsOut)||decimalsOut<0||decimalsOut>36)throw new Error('LI.FI returned invalid token decimals.');
-   const estimated=formatQuoteAmount(result.estimate.toAmount,decimalsOut);
-   const minimum=result.estimate.toAmountMin?formatQuoteAmount(result.estimate.toAmountMin,decimalsOut):'Not reported';
+   const checked=verifyReadOnlyQuote(result,selected,fromToken,toToken,fromAmount,decimals,addr);
+   const decimalsOut=checked.decimalsOut;
+   const estimated=formatQuoteAmount(checked.estimated,decimalsOut);
+   const minimum=formatQuoteAmount(checked.minimum,decimalsOut);
    if(!valid())return;
    $('receiveAmount').value=estimated;
    $('quoteReceive').textContent=estimated+' '+target;
@@ -457,12 +506,15 @@ async function fetchLiveQuote(id){
      ?'≈ $'+(feeAmountNumber*usdPrice).toFixed(4)+' (not charged)':'Not reported (not charged)';
    $('quotePanel').hidden=false;
    quoteUpdatedAt=Date.now(); // Only a successfully received, matching quote is marked fresh.
+   quoteReadiness={requestId:id,chainId:selected.id,account:addr,wallet:currentWallet,
+     source,target,fromToken:fromToken.toLowerCase(),toToken:toToken.toLowerCase(),
+     rawAmount:fromAmount,minRaw:BigInt(checked.minimum),estimatedRaw:BigInt(checked.estimated)};
    refreshSpendValidation();
    $('quoteFeedback').textContent='Live LI.FI estimate received • '+new Date().toLocaleTimeString()+'. Read-only.';
  }catch(e){
    if(!valid())return;
    $('receiveAmount').value='';$('quotePanel').hidden=true;
-   quoteGasInfo=null;quoteUpdatedAt=0;refreshSpendValidation();
+   quoteGasInfo=null;quoteReadiness=null;quoteUpdatedAt=0;refreshSpendValidation();
    if(smartMaxState){smartMaxState=null;status('MAX could not be finalized. Try another amount or press MAX again.');}
    $('quoteFeedback').textContent=e.name==='AbortError'?'Quote request timed out. Try again.':(e instanceof TypeError?'Could not contact LI.FI. Check your network and browser.':String(e.message||'Quote unavailable.'));
  }finally{
@@ -531,7 +583,9 @@ async function readOneToken(symbol, id, targetChain, targetAccount, targetWallet
 async function readNativeBalance(){
  if(!wallet||!account)return;
  const id=++balanceRequestId,targetChain=chain.id,targetAccount=account,targetWallet=wallet;
- smartMaxState=null;payBalanceInfo=null;refreshSpendValidation();
+ smartMaxState=null;payBalanceInfo=null;
+ clearQuote('Refreshing wallet balances before validating the quote…');
+ refreshSpendValidation();
  const valid=()=>isCurrentBalanceRequest(id,targetChain,targetAccount,targetWallet);
  if(chain.vm!=='evm'){
    nativeWei=null;refreshWalletHeader();
@@ -576,7 +630,7 @@ async function connect(){if(chain.vm!=='evm'){status('This network is shown in t
 $('walletButton').onclick=()=>account?showModal('Wallet connection',[{label:shortAddress(account),description:'Connected address',disabled:true,select:()=>{}},{label:'Refresh balances',description:chain.vm==='evm'?'Refresh current EVM native balance':'Not available on this network yet',disabled:chain.vm!=='evm',select:readNativeBalance},{label:'Disconnect from this page',select:resetWallet}]):connect();$('disconnectButton').onclick=resetWallet;
 $('swapButton').onclick=()=>status('Read-only preview. No approvals, signatures or swap transactions are implemented.');
 if(window.ethereum){const p=provider();p?.on?.('accountsChanged',accounts=>{smartMaxState=null;clearQuote('Wallet changed: refreshing quote availability.');if(!accounts?.length){resetWallet();return}if(wallet){balanceRequestId++;payBalanceInfo=null;nativeWei=null;account=accounts[0];refreshSpendValidation();readNativeBalance()}});p?.on?.('chainChanged',()=>{smartMaxState=null;clearQuote('Network changed: refreshing quote availability.');balanceRequestId++;payBalanceInfo=null;nativeWei=null;refreshSpendValidation();if(wallet)readNativeBalance()})}
-// No new buttons, panels, transaction methods, fees, or wallet permissions in V9.
+// V10 only computes read-only preview checks; swap/signing/approvals/fees remain disabled.
 setInterval(refreshStaleQuote,QUOTE_REFRESH_CHECK_MS);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshStaleQuote()});
 window.addEventListener('focus',refreshStaleQuote);
@@ -584,6 +638,7 @@ updateLabels();
 </script>
 </body>
 </html>
+
 
 
 
