@@ -24,17 +24,13 @@ main{width:min(1120px,calc(100% - 32px));margin:48px auto 64px;display:grid;grid
 .fee{display:flex;justify-content:space-between;align-items:center;color:#c9d2eb;font-size:13px;margin:18px 2px}.fee strong{color:#ffe06a;font-size:18px}.swap-action{width:100%;padding:16px;background:linear-gradient(100deg,#fff078,#ffce39);border:2px solid #ffefa8;border-radius:17px;font-weight:900;color:#21183b;font-size:17px;box-shadow:0 0 18px #ffdc5236}.foot{margin-top:12px;font-size:12px;color:var(--muted);line-height:1.5;text-align:center}.notice{border-radius:14px;border:1px solid #5767a0;padding:11px 12px;background:#1b2750;color:#d4e0ff;font-size:12px;margin-top:14px;line-height:1.5}.status{margin-top:8px;min-height:18px;font-size:12px;color:#ffe88b}
 .modal-layer{position:fixed;inset:0;z-index:20;background:#020715c9;display:none;align-items:center;justify-content:center;padding:20px}.modal-layer.open{display:flex}.modal{background:#181d3c;border:1px solid #7178ae;box-shadow:0 24px 80px #000d;width:min(440px,100%);max-height:80vh;overflow:auto;border-radius:22px;padding:18px}.modal h3{margin:0}.close{border:0;background:transparent;color:#fff;font-size:26px}.option{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:#232a50;border:1px solid #49547d;border-radius:15px;margin-top:9px;padding:10px 12px;color:white}.option:disabled{opacity:.48}.option strong{font-size:14px}.option small{display:block;color:#aeb8d2;font-size:11px;margin-top:3px}.option .end{margin-left:auto;color:#ffe07b;font-size:12px}.option .token-stack{margin-right:2px}
 .spend-warning{margin:8px 2px 5px;padding:10px 12px;border:1px solid #9f704d;border-radius:12px;background:#372a36;color:#ffe2ae;font-size:12px;line-height:1.55}.spend-warning[hidden]{display:none}.spend-warning.good{border-color:#40685a;background:#172f31;color:#b9f7df}.max-button{border:1px solid #ffe07a;background:#453957;color:#ffe785;border-radius:9px;padding:2px 9px;font-weight:900;font-size:11px;min-height:26px}.max-button:disabled{opacity:.38}.balance-actions{display:inline-flex;gap:9px;align-items:center;justify-content:flex-end;flex-wrap:wrap}.quote-panel{margin:12px 0;padding:12px;border:1px solid #7468ae;border-radius:15px;background:#111c39}.quote-panel[hidden]{display:none}.quote-panel .row{font-size:12px;color:#c4cdeb;margin:7px 0;align-items:start}.quote-panel .row strong{color:#f1f3ff;font-size:12px;text-align:right;max-width:54%;overflow-wrap:anywhere}.quote-panel .row:first-child strong{color:#ffe16d}.quote-note{font-size:11px;line-height:1.6;color:#c3cce4}.quote-feedback{min-height:17px;font-size:12px;color:#ffe18a;margin-top:7px}.wallet-details{font-size:13px;color:#d3d9ef;padding:8px 0;display:none}.wallet-details.on{display:block}.wallet-details strong{color:#ffdf69}.wallet-details button{border:1px solid #726ead;background:#22284c;color:white;padding:6px 10px;border-radius:10px;margin-top:7px}
-/* V13: compact, read-only holdings view. Existing swap styles remain unchanged. */
-.wallet-assets{margin:14px 0;border:1px solid #5b679a;border-radius:16px;background:#121b36;color:#ecf1ff;overflow:hidden}
-.wallet-assets[hidden]{display:none}.wallet-assets summary{cursor:pointer;padding:12px 14px;font-weight:800;color:#ffe078}
-.wallet-assets summary span{font-size:12px;color:#b8c6e7;font-weight:500;margin-left:7px}
-.wallet-assets .asset-inner{padding:0 12px 12px}.wallet-assets .asset-note{font-size:11px;color:#c1cbe4;line-height:1.55;margin:4px 1px 10px}
-.wallet-assets .asset-refresh{border:1px solid #796fb8;background:#272952;color:#ffe486;border-radius:10px;font-size:12px;padding:7px 11px;margin-bottom:9px}
-.wallet-assets .asset-list{max-height:270px;overflow-y:auto}.wallet-assets .asset-item{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid #44507760}
-.wallet-assets .asset-item:last-child{border-bottom:0}.wallet-assets .asset-mark{width:35px;height:35px;border:1px solid #6575a5;border-radius:50%;background:#2b3567;color:#fff;display:grid;place-items:center;font-size:12px;font-weight:800;flex:none;overflow:hidden}
-.wallet-assets .asset-mark img{width:100%;height:100%;object-fit:contain}.wallet-assets .asset-info{min-width:0;flex:1}
-.wallet-assets .asset-info strong{display:block;font-size:13px;overflow-wrap:anywhere}.wallet-assets .asset-info small{display:block;color:#aebada;font-size:10px;overflow-wrap:anywhere}
-.wallet-assets .asset-amount{text-align:right;color:#f8e29a;font-size:12px;overflow-wrap:anywhere;max-width:42%}
+/* V13.1: the existing coin picker also holds indexed wallet assets; no separate panel. */
+.token-picker-heading{font-size:12px;font-weight:800;color:#ffe078;margin:15px 2px 7px;border-bottom:1px solid #4b557e;padding:0 0 7px}
+.token-picker-note{font-size:11px;color:#bfc9e6;line-height:1.6;margin:8px 3px}
+.token-picker-search{width:100%;margin:9px 0 2px;border:1px solid #6a70a5;border-radius:11px;background:#101932;color:#fff;padding:10px 12px;outline-offset:3px}
+.token-picker-search::placeholder{color:#aeb8d2}
+.token-picker-row{min-width:0}.token-picker-row strong,.token-picker-row small{overflow-wrap:anywhere}
+.option[hidden],.token-picker-heading[hidden],.token-picker-note[hidden]{display:none}
 footer{margin:28px auto;text-align:center;color:#7e8db5;font-size:12px;padding:0 20px}
 @media (max-width:930px){main{grid-template-columns:1fr;gap:26px}.headline{order:2}.swap{order:1}}@media (max-width:540px){header{padding-inline:16px}.brand strong{font-size:18px}.connect{padding:10px 14px}.swap{padding:16px;border-radius:24px}.field{padding:12px}.row.mobile-stack{align-items:stretch;flex-direction:column}.coin-select{width:100%;min-width:0}.coin-logo{width:40px;height:40px}}
 </style>
@@ -66,7 +62,7 @@ footer{margin:28px auto;text-align:center;color:#7e8db5;font-size:12px;padding:0
 <div class="middle"><button class="reverse" id="reverseButton" type="button" aria-label="Reverse pair">↕</button></div>
 <div class="field"><div class="row hint"><span>You receive</span><span id="receiveBalance">Balance: —</span></div><div class="row mobile-stack" style="margin-top:12px"><input class="amount" id="receiveAmount" aria-label="Estimated receive amount" placeholder="—" readonly><button class="coin-select" id="receiveCoin" type="button"><span class="left"><span class="token-stack"><img class="coin-logo" id="receiveIcon" alt="BNB"><img class="badge-logo" id="receiveBadge" alt="BNB Smart Chain"></span><span class="coin-meta"><span class="coin-main" id="receiveSymbol">BNB</span><small id="receiveNetworkTag">BNB Smart Chain</small></span></span><span class="chev">⌄</span></button></div></div>
 <div class="fee"><span>APXN planned fee (not charged)</span><strong>0.10%</strong></div>
-<details id="walletAssets" class="wallet-assets" open hidden><summary>Your wallet tokens <span id="walletAssetsCount">—</span></summary><div class="asset-inner"><div id="walletAssetsNote" class="asset-note" role="status" aria-live="polite">Connect a wallet to discover its ERC-20 holdings.</div><button type="button" id="walletAssetsRefresh" class="asset-refresh">Refresh wallet tokens</button><div id="walletAssetsList" class="asset-list"></div><div class="asset-note">Read-only EVM holdings indexed by Routescan. Unknown airdrops may be spam; showing a token does not mean it is sellable. Discovered tokens are not enabled for Swap yet.</div></div></details>
+
 <div id="spendWarning" class="spend-warning" role="status" aria-live="polite" hidden></div>
 <div class="quote-feedback" id="quoteFeedback" role="status" aria-live="polite">Connect wallet and enter amount to request a live LI.FI quote.</div>
 <div class="quote-panel" id="quotePanel" hidden aria-label="LI.FI live quote details">
@@ -175,6 +171,7 @@ let quoteReadiness=null; // Exact validated quote identity; NEVER transactionReq
 let smartMaxState=null; // Auto-refine native MAX only for this chain, account, token pair and exact balance.
 let walletAssets=[],walletAssetsAccount=null,walletAssetsUpdatedAt=0,walletAssetsRequestId=0;
 let walletAssetsAbort=null,walletAssetsLoading=false,walletAssetsPartial=false;
+let tokenModalWhich=null,walletAssetsAttemptedAt=0; // Guard discovery retries and update the open picker.
 let chain=NETWORKS[0],pay='USDT',receive='BNB',wallet=null,account=null,liveChainId=null,nativeWei=null;
 function status(msg){$('status').textContent=msg||''}
 function networkIconUrl(net){
@@ -194,38 +191,148 @@ function tokenIconUrl(symbol, net){
 }
 function fallbackImage(img, text, bg){img.onerror=null;img.src='data:image/svg+xml;utf8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" rx="32" fill="${bg}"/><text x="50%" y="53%" dominant-baseline="middle" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="22" font-weight="700" fill="white">${text}</text></svg>`)}
 function setImg(el, src, fallbackText, bg='#384780'){ el.src=src; el.onerror=()=>fallbackImage(el, fallbackText.slice(0,4).toUpperCase(), bg); }
+function walletTokenKey(item){return 'wallet:'+item.chainId+':'+item.contract.toLowerCase()}
+function walletTokenFromKey(key,net=chain){
+ const match=typeof key==='string'&&/^wallet:(\d+):(0x[0-9a-f]{40})$/.exec(key);
+ if(!match||!account||walletAssetsAccount?.toLowerCase()!==account.toLowerCase()||
+    net.vm!=='evm'||Number(match[1])!==net.id)return null;
+ return walletAssets.find(t=>!t.native&&Number(t.chainId)===net.id&&
+     t.contract?.toLowerCase()===match[2])||null;
+}
+function tokenDisplay(key){
+ const item=walletTokenFromKey(key);
+ return item?String(item.symbol||'Unknown token').slice(0,36):String(key);
+}
+function tokenIconForSelection(key){
+ // Never show an official asset logo for an unknown contract using the same symbol.
+ return walletTokenFromKey(key)?null:tokenIconUrl(key,chain);
+}
 function setTokenView(prefix, symbol){
- setImg($(prefix+'Icon'), tokenIconUrl(symbol, chain), symbol, '#2f4ca0');
+ const own=walletTokenFromKey(symbol);
+ if(own)fallbackImage($(prefix+'Icon'),tokenDisplay(symbol).replace(/[^A-Za-z0-9]/g,'').slice(0,4).toUpperCase()||'?','#384780');
+ else setImg($(prefix+'Icon'), tokenIconForSelection(symbol), symbol, '#2f4ca0');
  setImg($(prefix+'Badge'), networkIconUrl(chain), chain.symbol || chain.name.slice(0,2), '#0f1634');
- $(prefix+'Symbol').textContent=symbol;
+  $(prefix+'Symbol').textContent=tokenDisplay(symbol);
  $(prefix+'NetworkTag').textContent=chain.name;
- $(prefix+'Icon').alt=symbol;
+  $(prefix+'Icon').alt=tokenDisplay(symbol);
  $(prefix+'Badge').alt=chain.name;
 }
-function showModal(title,items){$('modalTitle').textContent=title;const root=$('modalOptions');root.replaceChildren();items.forEach(o=>{const btn=document.createElement('button');btn.type='button';btn.className='option';btn.disabled=!!o.disabled;if(o.icon || o.badge){const wrap=document.createElement('span');wrap.className='token-stack';const image=document.createElement('img');image.className='coin-logo';setImg(image,o.icon||o.badge,o.label,'#34457a');image.alt='';wrap.append(image);if(o.badge){const badge=document.createElement('img');badge.className='badge-logo';setImg(badge,o.badge,o.description||'', '#0f1634');badge.alt='';wrap.append(badge)}btn.append(wrap)}else{const circle=document.createElement('span');circle.className='coin-logo';circle.style.cssText='display:grid;place-items:center;color:#ffe37e;font-weight:900';circle.textContent=o.label.slice(0,2);btn.append(circle)}const holder=document.createElement('span');const label=document.createElement('strong');label.textContent=o.label;holder.append(label);if(o.description){const sub=document.createElement('small');sub.textContent=o.description;holder.append(sub)}btn.append(holder);if(o.end){const end=document.createElement('span');end.className='end';end.textContent=o.end;btn.append(end)}btn.addEventListener('click',()=>{closeModal();o.select()});root.append(btn)});$('modalLayer').classList.add('open')}
-function closeModal(){$('modalLayer').classList.remove('open')}
+function showModal(title,items){$('modalTitle').textContent=title;const root=$('modalOptions');root.replaceChildren();items.forEach(o=>{
+ if(o.heading){const label=document.createElement('div');label.className='token-picker-heading';label.textContent=o.heading;root.append(label);return;}
+ if(o.note){const note=document.createElement('div');note.className='token-picker-note';note.textContent=o.note;root.append(note);return;}
+ const btn=document.createElement('button');btn.type='button';btn.className='option'+(o.walletEntry?' token-picker-row':'');btn.disabled=!!o.disabled;if(o.icon || o.badge){const wrap=document.createElement('span');wrap.className='token-stack';const image=document.createElement('img');image.className='coin-logo';setImg(image,o.icon||o.badge,o.label,'#34457a');image.alt='';wrap.append(image);if(o.badge){const badge=document.createElement('img');badge.className='badge-logo';setImg(badge,o.badge,o.description||'', '#0f1634');badge.alt='';wrap.append(badge)}btn.append(wrap)}else{const circle=document.createElement('span');circle.className='coin-logo';circle.style.cssText='display:grid;place-items:center;color:#ffe37e;font-weight:900';circle.textContent=o.label.slice(0,2);btn.append(circle)}const holder=document.createElement('span');const label=document.createElement('strong');label.textContent=o.label;holder.append(label);if(o.description){const sub=document.createElement('small');sub.textContent=o.description;holder.append(sub)}btn.append(holder);if(o.contract)btn.dataset.contract=o.contract.toLowerCase();if(o.end){const end=document.createElement('span');end.className='end';end.textContent=o.end;btn.append(end)}btn.addEventListener('click',()=>{closeModal();o.select()});root.append(btn)});$('modalLayer').classList.add('open')}
+function closeModal(){tokenModalWhich=null;$('modalLayer').classList.remove('open')}
 $('closeModal').onclick=closeModal;$('modalLayer').addEventListener('click',e=>{if(e.target===$('modalLayer'))closeModal()});document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 function updateLabels(){
  smartMaxState=null;
  clearQuote('Enter an amount to request a LI.FI quote.');
  balanceRequestId++; // Discard obsolete balance responses when network/token selection changes.
  payBalanceInfo=null;
- pay=chain.tokens.includes(pay)?pay:chain.tokens[0];
- receive=chain.tokens.includes(receive)&&receive!==pay?receive:(chain.tokens.find(t=>t!==pay)||pay);
+  pay=chain.tokens.includes(pay)||walletTokenFromKey(pay)?pay:chain.tokens[0];
+  receive=(chain.tokens.includes(receive)||walletTokenFromKey(receive))&&receive!==pay?
+    receive:(chain.tokens.find(t=>t!==pay)||pay);
  $('networkName').textContent=chain.name; setImg($('networkIcon'), networkIconUrl(chain), chain.symbol||chain.name.slice(0,2), '#223057'); $('networkIcon').alt=chain.name;
  setTokenView('pay', pay); setTokenView('receive', receive);
  $('receiveAmount').value='';$('payBalance').textContent='Balance: —';$('receiveBalance').textContent='Balance: —';refreshWalletHeader();
  refreshSpendValidation();
 }
 $('networkButton').onclick=()=>showModal('Choose network',NETWORKS.map(n=>({label:n.name,description:n.locked?'Planned network — not available yet':(n.vm==='evm'?'EVM network • Chain ID '+n.id:(n.vm.toUpperCase()+' network • wallet integration next phase')),icon:networkIconUrl(n),disabled:n.locked,end:n.locked?'🔒 Soon':(n.vm==='evm'?'':'Soon'),select:async()=>{chain=n;pay=n.tokens.includes('USDT')?'USDT':n.tokens[0];receive=n.tokens.find(t=>t!==pay)||pay;updateLabels();if(chain.vm!=='evm'){nativeWei=null;status(chain.name+' added to the design. Wallet connection for this network comes in a later phase.');return}if(account&&liveChainId!==chain.id){status('Switching wallet network…');await switchChain()}else if(account){await readNativeBalance()}else{status('')}}})));
-function chooseToken(which){const other=which==='pay'?receive:pay;const items=chain.tokens.map(t=>({label:t,description:'On '+chain.name,icon:tokenIconUrl(t,chain),badge:networkIconUrl(chain),end:t===other?'Selected':'',disabled:t===other,select:()=>{if(which==='pay')pay=t;else receive=t;updateLabels();if(account)readNativeBalance()}})); if(!chain.tokens.includes('APXN')) items.push({label:'APXN',description:'Coming soon — disabled',disabled:true,end:'🔒 Soon',icon:APXN_ICON,badge:networkIconUrl(chain),select:()=>{}}); showModal('Choose token', items)}
+// Wallet assets appear in the EXISTING pay/receive dropdown, not under the Swap form.
+// All indexed chains are visible; only the selected chain is selectable in this phase.
+// A token's identity is its chain+contract, NEVER its name or symbol.
+function walletPickerItems(which){
+ const other=which==='pay'?receive:pay;
+ const active=account&&walletAssetsAccount?.toLowerCase()===account.toLowerCase();
+ const owned=active?walletAssets.filter(t=>t.raw>0n).map(t=>({...t})):[];
+ // Always show the selected chain's live native balance even if indexing is slow or incomplete.
+ if(account&&chain.vm==='evm'&&liveChainId===chain.id&&nativeWei!==null&&BigInt(nativeWei)>0n){
+   const existing=owned.find(t=>t.native&&Number(t.chainId)===chain.id);
+   if(existing)existing.raw=BigInt(nativeWei);
+   else owned.push({chainId:chain.id,contract:null,native:true,raw:BigInt(nativeWei),decimals:18,symbol:chain.symbol});
+ }
+ const here=owned.filter(t=>Number(t.chainId)===chain.id&&assetNetwork(t.chainId));
+ const away=owned.filter(t=>Number(t.chainId)!==chain.id||!assetNetwork(t.chainId));
+ const itemFor=(item,remote)=>{
+   const net=assetNetwork(item.chainId);
+   const key=item.native?net?.symbol:walletTokenKey(item);
+   const label=String(item.symbol||'Unknown token').slice(0,36);
+   const pinned=item.native||!!(net&&ERC20_TOKENS[net.id]?.[label]?.toLowerCase()===item.contract?.toLowerCase());
+   const officialKey=pinned&&net?.tokens.includes(label)?label:key;
+   const locked=label.toUpperCase()==='APXN';
+   const selectable=!remote&&!locked&&!!net&&!!officialKey&&!!account;
+   const meta=item.native?'Native coin':item.contract.slice(0,8)+'…'+item.contract.slice(-6);
+   const description=(net?net.name:'EVM chain '+item.chainId)+' • '+meta+
+     ' • Balance: '+assetLabel(item.raw,item.decimals);
+   return {label,description,contract:item.contract,icon:pinned&&net?tokenIconUrl(label,net):null,
+     badge:net?networkIconUrl(net):null,walletEntry:true,
+     end:locked?'🔒 Soon':remote?'Switch network':officialKey===other?'Selected':'',
+     disabled:!selectable||officialKey===other,
+     select:()=>{
+       if(which==='pay')pay=officialKey;else receive=officialKey;
+       updateLabels();if(account)readNativeBalance();
+     }};
+ };
+ const items=[];
+ if(account){
+   items.push({heading:'Your wallet • '+chain.name});
+   if(walletAssetsLoading&&!here.length)items.push({note:'Discovering your tokens…'});
+   if(walletAssetsPartial)items.push({note:'Indexer data may be incomplete. Use Refresh in this selector to retry.'});
+   if(!here.length&&!walletAssetsLoading)items.push({note:walletAssetsUpdatedAt?'No indexed holdings on this network. You can still select a common token below.':'Wallet discovery pending or unavailable; common tokens remain available.'});
+   items.push(...here.sort((a,b)=>Number(b.native)-Number(a.native)||a.symbol.localeCompare(b.symbol)).map(t=>itemFor(t,false)));
+   if(away.length){
+     items.push({heading:'Your wallet • other networks'});
+     items.push({note:'These balances belong to other networks. Change the network above before choosing them.'});
+     items.push(...away.sort((a,b)=>a.chainId-b.chainId||a.symbol.localeCompare(b.symbol)).map(t=>itemFor(t,true)));
+   }
+ }
+ items.push({heading:'Common tokens • '+chain.name});
+ const shown=new Set(here.map(t=>{
+   const net=assetNetwork(t.chainId),sym=String(t.symbol||'').slice(0,36);
+   return t.native?net?.symbol:(ERC20_TOKENS[net?.id]?.[sym]?.toLowerCase()===t.contract?.toLowerCase()?sym:null);
+ }).filter(Boolean));
+ for(const t of chain.tokens){
+   if(shown.has(t))continue;
+   items.push({label:t,description:'On '+chain.name,icon:tokenIconUrl(t,chain),badge:networkIconUrl(chain),
+     end:t===other?'Selected':'',disabled:t===other,select:()=>{
+       if(which==='pay')pay=t;else receive=t;
+       updateLabels();if(account)readNativeBalance();
+     }});
+ }
+ if(!chain.tokens.includes('APXN'))items.push({label:'APXN',description:'Coming soon — disabled',disabled:true,end:'🔒 Soon',icon:APXN_ICON,badge:networkIconUrl(chain),select:()=>{}});
+ items.push({note:'Unknown airdrops can be spam, unsellable or deceptive. Verify their contract before using a quote. No transaction is enabled.'});
+ return items;
+}
+function chooseToken(which){
+ tokenModalWhich=which;
+ showModal('Choose token',walletPickerItems(which));
+ const root=$('modalOptions');
+ const search=document.createElement('input');search.type='search';search.className='token-picker-search';
+ search.placeholder='Search wallet token or contract';search.setAttribute('aria-label','Search wallet tokens');
+ root.prepend(search);
+ const refresh=document.createElement('button');refresh.type='button';refresh.className='option';
+ refresh.textContent=walletAssetsLoading?'Loading wallet tokens…':'↻ Refresh wallet tokens';
+ refresh.disabled=!account||walletAssetsLoading;
+ refresh.onclick=()=>loadWalletAssets(true);
+ root.insertBefore(refresh,search.nextSibling);
+ search.addEventListener('input',()=>{
+   const q=search.value.trim().toLowerCase();
+   for(const element of root.children){
+     if(element===search||element===refresh)continue;
+     if(!q){element.hidden=false;continue;}
+     element.hidden=element.classList?.contains('token-picker-heading')||
+       element.classList?.contains('token-picker-note')||(!element.textContent.toLowerCase().includes(q)&&!element.dataset.contract?.includes(q));
+   }
+ });
+ if(account&&!walletAssetsLoading&&(!walletAssetsAttemptedAt||
+    (walletAssetsUpdatedAt&&Date.now()-walletAssetsUpdatedAt>WALLET_ASSETS_CACHE_MS)))loadWalletAssets();
+}
 // Convert entered decimal to exact base units; no floating-point token amounts.
 function parseDecimalUnits(text,decimals){
  const amount=String(text).trim().replace(',', '.');
  if(!/^(?:0|[1-9]\d{0,35})(?:\.\d{0,36})?$/.test(amount))throw new Error('Enter a valid positive amount (use a dot for decimals).');
  if(!Number.isInteger(decimals)||decimals<0||decimals>36)throw new Error('Token decimals are unavailable.');
  const [whole,fract='']=amount.split('.');
- if(fract.length>decimals)throw new Error('Too many decimal places for '+pay+'.');
+ if(fract.length>decimals)throw new Error('Too many decimal places for '+tokenDisplay(pay)+'.');
  const units=BigInt(whole)*(10n**BigInt(decimals))+BigInt((fract.padEnd(decimals,'0'))||'0');
  if(units<=0n)throw new Error('Enter an amount greater than zero.');
  return units.toString();
@@ -238,15 +345,15 @@ function spendCheck(){
  if(chain.vm!=='evm'||chain.locked)return {message:'This network is not enabled for live balance validation.',good:false};
  if(liveChainId!==chain.id)return {message:'Select '+chain.name+' in your wallet to check your balance.',good:false};
  if(!payBalanceInfo||payBalanceInfo.chainId!==chain.id||payBalanceInfo.account!==account||payBalanceInfo.symbol!==pay)
-   return {message:'Balance not available for '+pay+'. Quote is informational only.',good:false};
+   return {message:'Balance not available for '+tokenDisplay(pay)+'. Quote is informational only.',good:false};
  if(!balanceUpdatedAt||Date.now()-balanceUpdatedAt>QUOTE_READINESS_MAX_AGE_MS)
    return {message:'Wallet balance verification is old. Waiting for a fresh read-only balance check.',good:false};
  let amount;
  try{amount=BigInt(parseDecimalUnits(text,payBalanceInfo.decimals))}
  catch(e){return {message:String(e.message||'Invalid amount'),good:false}};
  const balance=payBalanceInfo.raw;
- if(balance===0n)return {message:'Insufficient '+pay+' balance: your wallet holds 0 '+pay+'. Any LI.FI quote is informational only.',good:false};
- if(amount>balance)return {message:'Insufficient '+pay+' balance: entered amount exceeds your available '+pay+'. Quotes do not prove wallet funds.',good:false};
+ if(balance===0n)return {message:'Insufficient '+tokenDisplay(pay)+' balance: your wallet holds 0 '+tokenDisplay(pay)+'. Any LI.FI quote is informational only.',good:false};
+ if(amount>balance)return {message:'Insufficient '+tokenDisplay(pay)+' balance: entered amount exceeds your available '+tokenDisplay(pay)+'. Quotes do not prove wallet funds.',good:false};
  if(pay===chain.symbol&&amount===balance)
    return {message:'Do not spend all '+pay+': keep the network coin for gas. Use MAX to leave a rough reserve.',good:false};
  // A gas quote alone does not establish readiness: confirm the matching LI.FI token,
@@ -313,7 +420,7 @@ $('maxButton').onclick=()=>{
  $('payAmount').value=exactBalanceString(raw,payBalanceInfo.decimals);
  scheduleQuote();
  status(native?(fromLiveGas?'MAX calculated from the last LI.FI gas estimate; confirming the new amount…':'MAX requesting a probe quote to calculate native gas, then it will adjust automatically…'):
-   'MAX set to the full verified '+pay+' token balance. Network gas is paid separately.');
+   'MAX set to the full verified '+tokenDisplay(pay)+' token balance. Network gas is paid separately.');
 };
 function clearQuote(message){
  ++quoteRequestId;
@@ -362,7 +469,7 @@ function invalidateWalletSafety(reason,context,targetWallet,targetAccount){
  if(Array.isArray(context.accounts)&&
     (!context.accounts[0]||context.accounts[0].toLowerCase()!==targetAccount.toLowerCase())){
    // The selected account changed or site access was revoked without an accountsChanged event.
-   wallet=null;account=null;liveChainId=null;
+   wallet=null;account=null;liveChainId=null;clearWalletAssets();
    $('walletButton').textContent='Connect Wallet';$('walletDetails').classList.remove('on');
    $('payBalance').textContent='Balance: —';$('receiveBalance').textContent='Balance: —';
    status('Wallet account changed or disconnected. Tap Connect Wallet to verify the new account.');
@@ -431,9 +538,9 @@ function refreshStaleQuote(){
  readNativeBalance(); // Existing wallet flow schedules the exact-amount quote after fresh balances.
 }
 function getQuoteTokenAddress(net,symbol){
- if(net.vm!=='evm'||net.locked||symbol==='APXN')return null;
+ if(net.vm!=='evm'||net.locked||symbol==='APXN'||walletTokenFromKey(symbol,net)?.symbol?.toUpperCase()==='APXN')return null;
  if(symbol===net.symbol)return NATIVE_TOKEN;
- const addr=ERC20_TOKENS[net.id]?.[symbol];
+ const addr=walletTokenFromKey(symbol,net)?.contract||ERC20_TOKENS[net.id]?.[symbol];
  return typeof addr==='string'&&/^0x[a-fA-F0-9]{40}$/.test(addr)?addr:null;
 }
 function quoteIsCurrent(id,netId,addr,source,target){
@@ -585,8 +692,8 @@ async function fetchLiveQuote(id){
    const minimum=formatQuoteAmount(checked.minimum,decimalsOut);
    if(!valid())return;
    $('receiveAmount').value=estimated;
-   $('quoteReceive').textContent=estimated+' '+target;
-   $('quoteMinimum').textContent=minimum==='Not reported'?minimum:minimum+' '+target;
+   $('quoteReceive').textContent=estimated+' '+tokenDisplay(target);
+   $('quoteMinimum').textContent=minimum==='Not reported'?minimum:minimum+' '+tokenDisplay(target);
    $('quoteRoute').textContent=String(result.toolDetails?.name||result.tool||'LI.FI').slice(0,80);
    $('quoteGas').textContent=sumUsd(result.estimate.gasCosts);
    // Compare precise native units, never the rounded USD display or provider fees.
@@ -596,7 +703,7 @@ async function fetchLiveQuote(id){
    if(refineNativeMax(selected,source,target,addr,fromAmount))return;
    const feeRaw=BigInt(fromAmount)/APXN_FEE_DENOMINATOR;
    const feeToken=feeRaw===0n?'< smallest token unit':formatUnits(feeRaw,decimals,8);
-   $('quoteApxnFee').textContent=feeRaw===0n?source+' (below smallest unit)':feeToken+' '+source;
+   $('quoteApxnFee').textContent=feeRaw===0n?tokenDisplay(source)+' (below smallest unit)':feeToken+' '+tokenDisplay(source);
    // A USD equivalent is shown ONLY when LI.FI reports a valid source-token priceUSD.
    const usdPrice=Number(result.action.fromToken?.priceUSD);
    const feeAmountNumber=Number(exactBalanceString(feeRaw,decimals));
@@ -621,16 +728,13 @@ async function fetchLiveQuote(id){
  }
 }
 $('payCoin').onclick=()=>chooseToken('pay');$('receiveCoin').onclick=()=>chooseToken('receive');$('reverseButton').onclick=()=>{[pay,receive]=[receive,pay];updateLabels();if(account)readNativeBalance()};$('payAmount').addEventListener('input',()=>{smartMaxState=null;scheduleQuote()});
-// V13: all indexed EVM ERC-20 holdings, identified by (chainId, contract), never by symbol.
-// The existing quote/token selector is deliberately NOT changed until V14 reviews dynamic contracts.
+// V13.1: read-only EVM token discovery, shown in the existing currency dropdown.
 function clearWalletAssets(){
  ++walletAssetsRequestId;
  if(walletAssetsAbort){walletAssetsAbort.abort();walletAssetsAbort=null;}
- walletAssets=[];walletAssetsAccount=null;walletAssetsUpdatedAt=0;
+ walletAssets=[];walletAssetsAccount=null;walletAssetsUpdatedAt=0;walletAssetsAttemptedAt=0;
  walletAssetsLoading=false;walletAssetsPartial=false;
- $('walletAssetsList').replaceChildren();
- $('walletAssets').hidden=true;$('walletAssetsCount').textContent='—';
- $('walletAssetsNote').textContent='Connect a wallet to discover its ERC-20 holdings.';
+ if(tokenModalWhich&&$('modalLayer').classList.contains('open'))chooseToken(tokenModalWhich);
 }
 function assetInteger(value){
  if(typeof value!=='string'||!(/^(?:0x[0-9a-f]+|[0-9]+)$/i.test(value)))return null;
@@ -644,54 +748,9 @@ function assetLabel(raw,decimals){
  if(decimals===null||decimals===undefined||!Number.isInteger(d)||d<0||d>36)return raw.toString()+' raw units';
  return formatUnits(raw,d,8);
 }
-function assetRow(item){
- const net=assetNetwork(item.chainId);
- const name=net?net.name:'EVM chain '+item.chainId;
- const knownNative=!!item.native&&!!net;
- const symbol=String(item.symbol|| (knownNative?net.symbol:'Unknown token')).slice(0,36);
- const line=document.createElement('div');line.className='asset-item';
- const mark=document.createElement('span');mark.className='asset-mark';
- const pinned=knownNative||(!item.native&&net&&ERC20_TOKENS[net.id]?.[symbol]?.toLowerCase()===item.contract.toLowerCase());
- if(pinned){
-   const img=document.createElement('img');
-   setImg(img,knownNative?networkIconUrl(net):tokenIconUrl(symbol,net),symbol,'#34457a');
-   img.alt='';mark.append(img);
- }else mark.textContent=symbol.slice(0,2).toUpperCase();
- const info=document.createElement('span');info.className='asset-info';
- const title=document.createElement('strong');title.textContent=symbol;
- const meta=document.createElement('small');
- meta.textContent=name+' • '+(item.native?'Native coin':item.contract.slice(0,6)+'…'+item.contract.slice(-4));
- if(!item.native)meta.title=item.contract;
- info.append(title,meta);
- const amount=document.createElement('span');amount.className='asset-amount';
- amount.textContent=assetLabel(item.raw,item.decimals);
- line.append(mark,info,amount);return line;
-}
 function renderWalletAssets(){
- if(!account||walletAssetsAccount?.toLowerCase()!==account.toLowerCase())return;
- $('walletAssets').hidden=false;
- const merged=walletAssets.slice();
- // Prefer the actual selected wallet's live native balance over an indexer's delayed snapshot.
- if(chain.vm==='evm'&&liveChainId===chain.id&&nativeWei!==null){
-   const existing=merged.find(t=>t.native&&Number(t.chainId)===chain.id);
-   if(existing)existing.raw=BigInt(nativeWei);
-   else merged.push({chainId:chain.id,raw:BigInt(nativeWei),symbol:chain.symbol,decimals:18,native:true,contract:null});
- }
- const current=chain.vm==='evm'?chain.id:null;
- merged.sort((a,b)=>(Number(b.chainId===current)-Number(a.chainId===current))||
-   (Number(b.native)-Number(a.native))||a.symbol.localeCompare(b.symbol));
- const list=$('walletAssetsList');list.replaceChildren();
- let count=0;
- for(const item of merged){
-   if(item.raw<=0n)continue;
-   list.append(assetRow(item));count++;
- }
- $('walletAssetsCount').textContent=count+' assets'+(walletAssetsPartial?' • partial':'');
- if(!count){const blank=document.createElement('div');blank.className='asset-note';
-   blank.textContent='No positive balances returned by the indexer.';list.append(blank);}
- if(walletAssetsLoading)$('walletAssetsNote').textContent='Discovering wallet tokens across indexed EVM networks…';
- else if(walletAssetsPartial)$('walletAssetsNote').textContent='Partial holdings only: indexing, rate limit, or page limit prevented a complete scan. Tap Refresh to retry.';
- else $('walletAssetsNote').textContent='Indexed holdings for '+shortAddress(account)+' • '+new Date(walletAssetsUpdatedAt).toLocaleTimeString();
+ // Updates just the existing pay/receive selector; the separate holdings card is removed.
+ if(tokenModalWhich&&$('modalLayer').classList.contains('open'))chooseToken(tokenModalWhich);
 }
 async function assetPages(address,endpoint,controller,valid){
  const all=[],seen=new Set();let next=null,complete=false;
@@ -714,8 +773,9 @@ async function assetPages(address,endpoint,controller,valid){
 }
 async function loadWalletAssets(force=false){
  if(!account||!wallet||!/^0x[0-9a-f]{40}$/i.test(account))return;
- const address=account,requestId=walletAssetsRequestId;
+ const address=account;
  if(!force&&walletAssetsLoading)return;
+ if(!force&&!walletAssetsUpdatedAt&&walletAssetsAttemptedAt&&Date.now()-walletAssetsAttemptedAt<WALLET_ASSETS_CACHE_MS){renderWalletAssets();return;}
  if(!force&&walletAssetsAccount?.toLowerCase()===address.toLowerCase()&&
     walletAssetsUpdatedAt&&Date.now()-walletAssetsUpdatedAt<WALLET_ASSETS_CACHE_MS){
    renderWalletAssets();return;
@@ -724,9 +784,8 @@ async function loadWalletAssets(force=false){
  const controller=new AbortController();walletAssetsAbort=controller;
  const currentId=++walletAssetsRequestId;
  const valid=()=>!controller.signal.aborted&&currentId===walletAssetsRequestId&&account?.toLowerCase()===address.toLowerCase();
- walletAssetsAccount=address;walletAssetsLoading=true;
- $('walletAssets').hidden=false;$('walletAssetsRefresh').disabled=true;
- $('walletAssetsNote').textContent='Discovering wallet tokens across indexed EVM networks…';
+ walletAssetsAccount=address;walletAssetsLoading=true;walletAssetsAttemptedAt=Date.now();
+ renderWalletAssets();
  const timeout=setTimeout(()=>controller.abort(),22000);
  try{
    // One multi-chain indexer request per page, not one RPC scan per token.
@@ -763,21 +822,18 @@ async function loadWalletAssets(force=false){
  }catch(e){
    if(!valid())return;
    walletAssetsPartial=true;walletAssetsLoading=false;
-   $('walletAssetsCount').textContent='unavailable';
-   $('walletAssetsList').replaceChildren();
-   $('walletAssetsNote').textContent=e.name==='AbortError'
-     ?'Token discovery timed out. Tap Refresh to retry.'
-     :'Token discovery unavailable (network, indexer or browser access). Tap Refresh to retry.';
+   renderWalletAssets();
+   status(e.name==='AbortError'?'Token discovery timed out. Open a token selector to retry.':'Wallet token indexer unavailable. Common tokens remain available.');
  }finally{
    clearTimeout(timeout);
    if(walletAssetsAbort===controller)walletAssetsAbort=null;
-   if(currentId===walletAssetsRequestId)$('walletAssetsRefresh').disabled=false;
+   if(currentId===walletAssetsRequestId)renderWalletAssets();
  }
 }
-$('walletAssetsRefresh').onclick=()=>loadWalletAssets(true);
+// The wallet-token refresh button now lives inside the pay/receive selector.
 function shortAddress(a){return a?a.slice(0,6)+'…'+a.slice(-4):'—'}
 function provider(){const eth=window.ethereum;if(!eth)return null;if(Array.isArray(eth.providers)&&eth.providers.length){return eth.providers.find(p=>p.isTrust)||eth.providers.find(p=>p.isMetaMask)||eth.providers[0]}return eth}
-function resetWallet(){clearWalletAssets();smartMaxState=null;balanceUpdatedAt=0;clearQuote('Connect wallet to get a live quote.');balanceRequestId++;wallet=null;account=null;liveChainId=null;nativeWei=null;$('walletDetails').classList.remove('on');$('walletButton').textContent='Connect Wallet';$('payBalance').textContent='Balance: —';$('receiveBalance').textContent='Balance: —';payBalanceInfo=null;refreshSpendValidation();status('Disconnected from this page. Revoke permission in your wallet if needed.')}
+function resetWallet(){clearWalletAssets();if(pay.startsWith('wallet:')||receive.startsWith('wallet:')){pay='USDT';receive='BNB';updateLabels();}smartMaxState=null;balanceUpdatedAt=0;clearQuote('Connect wallet to get a live quote.');balanceRequestId++;wallet=null;account=null;liveChainId=null;nativeWei=null;$('walletDetails').classList.remove('on');$('walletButton').textContent='Connect Wallet';$('payBalance').textContent='Balance: —';$('receiveBalance').textContent='Balance: —';payBalanceInfo=null;refreshSpendValidation();status('Disconnected from this page. Revoke permission in your wallet if needed.')}
 function ethFormatted(hex){const v=BigInt(hex),unit=10n**18n;const whole=v/unit;let frac=(v%unit).toString().padStart(18,'0').slice(0,5).replace(/0+$/,'');return whole.toString()+(frac?'.'+frac:'')}
 function refreshWalletHeader(){
  if(!account){$('walletDetails').classList.remove('on');return}
@@ -805,7 +861,7 @@ function formatUnits(raw, decimals, maxPlaces=6){
  if(!display && val>0n)return whole===0n?'<0.'+'0'.repeat(Math.max(0,maxPlaces-1))+'1':whole.toString()+'…';
  return whole.toString()+(display?'.'+display:'');
 }
-function tokenAddress(symbol){return ERC20_TOKENS[chain.id]?.[symbol]||null}
+function tokenAddress(symbol){return walletTokenFromKey(symbol)?.contract||ERC20_TOKENS[chain.id]?.[symbol]||null}
 function isCurrentBalanceRequest(id, targetChain, targetAccount, targetWallet){
  return id===balanceRequestId && chain.id===targetChain && account===targetAccount && wallet===targetWallet && chain.vm==='evm' && liveChainId===targetChain;
 }
@@ -891,7 +947,7 @@ async function switchChain(){if(!wallet||!chain.id||chain.vm!=='evm')return;try{
 async function connect(){if(chain.vm!=='evm'){status('This network is shown in the design, but wallet connection for '+chain.name+' is not enabled yet.');return}const p=provider();if(!p){status('No wallet detected. Open this HTTPS page inside Trust Wallet or MetaMask mobile DApp browser.');return}try{status('Waiting for wallet permission…');const accounts=await p.request({method:'eth_requestAccounts'});if(!accounts?.[0]){status('No account was selected.');return}wallet=p;account=accounts[0];liveChainId=parseInt(await p.request({method:'eth_chainId'}),16);refreshWalletHeader();if(liveChainId!==chain.id){status('Connected. Switch to '+chain.name+' to read balances.');await switchChain()}else await readNativeBalance()}catch(e){status(e.code===4001?'Wallet connection declined.':(e.message||'Wallet connection failed.'))}}
 $('walletButton').onclick=()=>account?showModal('Wallet connection',[{label:shortAddress(account),description:'Connected address',disabled:true,select:()=>{}},{label:'Refresh balances',description:chain.vm==='evm'?'Refresh current EVM native balance':'Not available on this network yet',disabled:chain.vm!=='evm',select:readNativeBalance},{label:'Disconnect from this page',select:resetWallet}]):connect();$('disconnectButton').onclick=resetWallet;
 $('swapButton').onclick=()=>status('Read-only preview. No approvals, signatures or swap transactions are implemented.');
-if(window.ethereum){const p=provider();p?.on?.('accountsChanged',accounts=>{smartMaxState=null;clearQuote('Wallet changed: refreshing quote availability.');if(!accounts?.length){resetWallet();return}if(wallet){clearWalletAssets();balanceRequestId++;payBalanceInfo=null;balanceUpdatedAt=0;nativeWei=null;account=accounts[0];refreshSpendValidation();readNativeBalance()}});p?.on?.('chainChanged',()=>{smartMaxState=null;clearQuote('Network changed: refreshing quote availability.');balanceRequestId++;payBalanceInfo=null;balanceUpdatedAt=0;nativeWei=null;refreshSpendValidation();if(wallet)readNativeBalance()})}
+if(window.ethereum){const p=provider();p?.on?.('accountsChanged',accounts=>{smartMaxState=null;clearQuote('Wallet changed: refreshing quote availability.');if(!accounts?.length){resetWallet();return}if(wallet){clearWalletAssets();balanceRequestId++;payBalanceInfo=null;balanceUpdatedAt=0;nativeWei=null;account=accounts[0];if(pay.startsWith('wallet:')||receive.startsWith('wallet:'))updateLabels();refreshSpendValidation();readNativeBalance()}});p?.on?.('chainChanged',()=>{smartMaxState=null;clearQuote('Network changed: refreshing quote availability.');balanceRequestId++;payBalanceInfo=null;balanceUpdatedAt=0;nativeWei=null;refreshSpendValidation();if(wallet)readNativeBalance()})}
 // V11 reads wallet/account/chain/native/token balances only; no signing, approvals, swap, or fees.
 setInterval(()=>{refreshStaleQuote();safetyAuditVisibleQuote();},QUOTE_REFRESH_CHECK_MS);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){refreshStaleQuote();safetyAuditVisibleQuote();}});
