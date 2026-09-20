@@ -85,7 +85,7 @@ footer{margin:28px auto;text-align:center;color:#7e8db5;font-size:12px;padding:0
 </div>
 <button class="swap-action" id="swapButton" type="button" disabled aria-disabled="true" title="No transaction execution in this preview">Swap disabled — preview</button>
 <div class="status" id="status"></div>
-<div class="notice">Read-only wallet and LI.FI quotes for supported EVM tokens. Quotes can be shown even when balance is insufficient, but they are NOT executable. MAX uses the whole verified ERC-20 balance; for native coins it starts with a safe probe quote, then automatically reserves quoted network gas plus 30% when available. Gas can change; this is NOT a guarantee. NEAR/TON remain previews, APXN is locked, and transactions are disabled.</div>
+<div class="notice">Read-only wallet and LI.FI quotes for supported EVM tokens. Quotes can be shown even when balance is insufficient, but they are NOT executable. MAX uses the whole verified ERC-20 balance; for native coins it starts with a safe probe quote, then reserves quoted gas plus at least 30% and a little extra for gas fluctuations when available. Gas can change; this is NOT a guarantee. NEAR/TON remain previews, APXN is locked, and transactions are disabled.</div>
 <div class="foot">Quotes may include provider and network charges. The 0.10% APXN fee is PLANNED ONLY: not in the quoted amount, not deducted, and not collected.</div>
 </section>
 </main>
@@ -174,7 +174,11 @@ const WALLET_SAFETY_AUDIT_MS=20000; // Read-only live wallet/account/chain/balan
 const APXN_FEE_DENOMINATOR=1000n; // 0.10%, display only — not charged
 const GAS_CUSHION_NUMERATOR=13n; // 30% extra on the quoted native gas; not a guarantee
 const GAS_CUSHION_DENOMINATOR=10n;
-const MAX_QUOTE_REFINEMENTS=2; // At most three live LI.FI quotes per native MAX click.
+// V13.7: bounded native MAX refinement. Up to four MAX-probe/repricing quotes;
+// if gas is still unstable, one final informational quote is checked without further MAX retries.
+const MAX_QUOTE_REFINEMENTS=3;
+const MAX_VOLATILITY_NUMERATOR=15n; // MAX-only gas volatility buffer: 50% total vs 30% minimum readiness cushion.
+const MAX_VOLATILITY_DENOMINATOR=10n;
 let quoteRequestId=0,quoteTimer=null,quoteAbort=null;
 let quoteUpdatedAt=0,quoteAttemptedAt=0,lastAutoRefreshAt=0; // Date.now timestamps; quote age is not an API expiry.
 let balanceRequestId=0;
@@ -475,14 +479,15 @@ $('maxButton').onclick=()=>{
    if(previous&&previous.gasRaw!==null&&exactPrevious&&previous.chainId===chain.id&&
       previous.account===account&&previous.source===pay&&previous.target===receive&&
       nativeWei!==null&&BigInt(nativeWei)===balance){
-     const reserve=nativeGasReserve(previous.gasRaw);
+     const reserve=nativeMaxReserve(previous.gasRaw);
      raw=balance>reserve?balance-reserve:0n;
      fromLiveGas=true;
    }
  }
  if(raw<=0n){status('Not enough '+chain.symbol+' to reserve the estimated native network gas.');return;}
  if(native&&nativeWei!==null&&BigInt(nativeWei)===balance){
-   smartMaxState={chainId:chain.id,account,source:pay,target:receive,balanceRaw:balance,refinements:0};
+   smartMaxState={chainId:chain.id,account,source:pay,target:receive,balanceRaw:balance,
+     refinements:0,highestGasRaw:fromLiveGas&&quoteGasInfo?.gasRaw!==null&&quoteGasInfo?.gasRaw!==undefined?quoteGasInfo.gasRaw:0n};
  }
  $('payAmount').value=exactBalanceString(raw,payBalanceInfo.decimals);updatePayAmountDisplay();
  scheduleQuote();
@@ -716,41 +721,61 @@ function nativeGasEstimate(costs,chainId){
  return total>0n?total:null;
 }
 function nativeGasReserve(gasRaw){
- // Ceiling division is conservative: no floating-point rounding or fixed 10% final reserve.
- return (gasRaw*GAS_CUSHION_NUMERATOR+GAS_CUSHION_DENOMINATOR-1n)/GAS_CUSHION_DENOMINATOR;
+  // Readiness keeps its original 30% safety threshold.
+  return (gasRaw*GAS_CUSHION_NUMERATOR+GAS_CUSHION_DENOMINATOR-1n)/GAS_CUSHION_DENOMINATOR;
+}
+function nativeMaxReserve(gasRaw){
+  // MAX adds a modest fluctuation allowance ON TOP of readiness's 30% minimum.
+  // Integer ceiling, not floating-point math; neither estimate guarantees final gas.
+  const readiness=nativeGasReserve(gasRaw);
+  const maxBuffer=(gasRaw*MAX_VOLATILITY_NUMERATOR+MAX_VOLATILITY_DENOMINATOR-1n)/MAX_VOLATILITY_DENOMINATOR;
+  return maxBuffer>readiness?maxBuffer:readiness;
 }
 function refineNativeMax(net,source,target,addr,fromAmount){
- const active=smartMaxState;
- if(!active)return false;
- // Ignore any quote generated for a different wallet, chain, source/target or balance.
- if(active.chainId!==net.id||active.account!==addr||active.source!==source||active.target!==target||
-    source!==net.symbol||!payBalanceInfo||payBalanceInfo.raw!==active.balanceRaw||
-    payBalanceInfo.decimals!==18||nativeWei===null||BigInt(nativeWei)!==active.balanceRaw){
-   smartMaxState=null;return false;
- }
- if(!quoteGasInfo||quoteGasInfo.rawAmount!==fromAmount||quoteGasInfo.gasRaw===null){
-   smartMaxState=null;
-   status('MAX: native gas could not be verified from LI.FI; the provisional amount is not a validated maximum.');
-   return false;
- }
- const reserve=nativeGasReserve(quoteGasInfo.gasRaw);
- if(reserve>=active.balanceRaw){
-   smartMaxState=null;
-   status('MAX: not enough native balance for LI.FI estimated gas plus 30% cushion.');
-   return false;
- }
- const desired=active.balanceRaw-reserve;
- if(desired===BigInt(fromAmount)||active.refinements>=MAX_QUOTE_REFINEMENTS){
-   smartMaxState=null;
-   status('MAX checked against the latest live LI.FI gas estimate (+30% cushion). Verify the balance message; swaps remain disabled.');
-   return false;
- }
- active.refinements++;
- // The provisional quote must NEVER be shown for the newly adjusted input.
- $('payAmount').value=exactBalanceString(desired,payBalanceInfo.decimals);updatePayAmountDisplay();
- scheduleQuote(); // Clears the old quote and asks LI.FI to price the exact revised amount.
- status('MAX recalculating quote '+(active.refinements+1)+'/'+(MAX_QUOTE_REFINEMENTS+1)+' with reserved gas…');
- return true;
+  const active=smartMaxState;
+  if(!active)return false;
+  // Discard re-pricing if the active account, selected chain, quote or raw balance changed.
+  if(active.chainId!==net.id||active.account!==addr||active.source!==source||active.target!==target||
+     source!==net.symbol||!payBalanceInfo||payBalanceInfo.raw!==active.balanceRaw||
+     payBalanceInfo.decimals!==18||nativeWei===null||BigInt(nativeWei)!==active.balanceRaw){
+    smartMaxState=null;return false;
+  }
+  if(!quoteGasInfo||quoteGasInfo.rawAmount!==fromAmount||quoteGasInfo.gasRaw===null){
+    smartMaxState=null;
+    status('MAX: network gas could not be verified from LI.FI. The amount is provisional.');
+    return false;
+  }
+  // Never reduce the MAX gas budget because one intermediate LI.FI quote got cheaper.
+  // This prevents small oscillations from consuming all allowed quote refinements.
+  if(quoteGasInfo.gasRaw>active.highestGasRaw)active.highestGasRaw=quoteGasInfo.gasRaw;
+  const reserve=nativeMaxReserve(active.highestGasRaw);
+  if(reserve>=active.balanceRaw){
+    smartMaxState=null;
+    status('MAX: balance does not cover the observed network gas plus the MAX safety reserve.');
+    return false;
+  }
+  const desired=active.balanceRaw-reserve;
+  if(desired===BigInt(fromAmount)){
+    smartMaxState=null;
+    status('MAX reserve calculated against the latest LI.FI gas estimate. Verify the wallet balance warning; swaps remain disabled.');
+    return false;
+  }
+  if(active.refinements>=MAX_QUOTE_REFINEMENTS){
+    // A final changed gas estimate cannot be labelled as a successful MAX quote.
+    // One last conservative amount is quoted with MAX auto-refinement OFF: the
+    // existing 30% spend validation decides whether it is sufficient or warns.
+    smartMaxState=null;
+    $('payAmount').value=exactBalanceString(desired,payBalanceInfo.decimals);updatePayAmountDisplay();
+    scheduleQuote();
+    status('MAX gas estimates varied. Checking a conservative amount once more; follow the balance warning if gas changes again.');
+    return true;
+  }
+  active.refinements++;
+  // Hide each superseded quote before asking LI.FI for the exact repriced amount.
+  $('payAmount').value=exactBalanceString(desired,payBalanceInfo.decimals);updatePayAmountDisplay();
+  scheduleQuote();
+  status('MAX recalculating quote '+(active.refinements+1)+'/'+(MAX_QUOTE_REFINEMENTS+1)+' with extra gas fluctuation reserve…');
+  return true;
 }
 function sumUsd(costs){
  if(!Array.isArray(costs)||!costs.length)return 'Not reported';
@@ -1203,6 +1228,7 @@ updatePayAmountDisplay();
 </script>
 </body>
 </html>
+
 
 
 
