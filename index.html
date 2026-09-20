@@ -24,7 +24,7 @@ main{width:min(1120px,calc(100% - 32px));margin:48px auto 64px;display:grid;grid
 .fee{display:flex;justify-content:space-between;align-items:center;color:#c9d2eb;font-size:13px;margin:18px 2px}.fee strong{color:#ffe06a;font-size:18px}.swap-action{width:100%;padding:16px;background:linear-gradient(100deg,#fff078,#ffce39);border:2px solid #ffefa8;border-radius:17px;font-weight:900;color:#21183b;font-size:17px;box-shadow:0 0 18px #ffdc5236}.foot{margin-top:12px;font-size:12px;color:var(--muted);line-height:1.5;text-align:center}.notice{border-radius:14px;border:1px solid #5767a0;padding:11px 12px;background:#1b2750;color:#d4e0ff;font-size:12px;margin-top:14px;line-height:1.5}.status{margin-top:8px;min-height:18px;font-size:12px;color:#ffe88b}
 .modal-layer{position:fixed;inset:0;z-index:20;background:#020715c9;display:none;align-items:center;justify-content:center;padding:20px}.modal-layer.open{display:flex}.modal{background:#181d3c;border:1px solid #7178ae;box-shadow:0 24px 80px #000d;width:min(440px,100%);max-height:80vh;overflow:auto;border-radius:22px;padding:18px}.modal h3{margin:0}.close{border:0;background:transparent;color:#fff;font-size:26px}.option{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:#232a50;border:1px solid #49547d;border-radius:15px;margin-top:9px;padding:10px 12px;color:white}.option:disabled{opacity:.48}.option strong{font-size:14px}.option small{display:block;color:#aeb8d2;font-size:11px;margin-top:3px}.option .end{margin-left:auto;color:#ffe07b;font-size:12px}.option .token-stack{margin-right:2px}
 .spend-warning{margin:8px 2px 5px;padding:10px 12px;border:1px solid #9f704d;border-radius:12px;background:#372a36;color:#ffe2ae;font-size:12px;line-height:1.55}.spend-warning[hidden]{display:none}.spend-warning.good{border-color:#40685a;background:#172f31;color:#b9f7df}.max-button{border:1px solid #ffe07a;background:#453957;color:#ffe785;border-radius:9px;padding:2px 9px;font-weight:900;font-size:11px;min-height:26px}.max-button:disabled{opacity:.38}.balance-actions{display:inline-flex;gap:9px;align-items:center;justify-content:flex-end;flex-wrap:wrap}.quote-panel{margin:12px 0;padding:12px;border:1px solid #7468ae;border-radius:15px;background:#111c39}.quote-panel[hidden]{display:none}.quote-panel .row{font-size:12px;color:#c4cdeb;margin:7px 0;align-items:start}.quote-panel .row strong{color:#f1f3ff;font-size:12px;text-align:right;max-width:54%;overflow-wrap:anywhere}.quote-panel .row:first-child strong{color:#ffe16d}.quote-note{font-size:11px;line-height:1.6;color:#c3cce4}.quote-feedback{min-height:17px;font-size:12px;color:#ffe18a;margin-top:7px}.wallet-details{font-size:13px;color:#d3d9ef;padding:8px 0;display:none}.wallet-details.on{display:block}.wallet-details strong{color:#ffdf69}.wallet-details button{border:1px solid #726ead;background:#22284c;color:white;padding:6px 10px;border-radius:10px;margin-top:7px}
-/* V13.1: the existing coin picker also holds indexed wallet assets; no separate panel. */
+/* V13.2: wallet tokens remain in the existing selector; remote holdings switch their supported network. */
 .token-picker-heading{font-size:12px;font-weight:800;color:#ffe078;margin:15px 2px 7px;border-bottom:1px solid #4b557e;padding:0 0 7px}
 .token-picker-note{font-size:11px;color:#bfc9e6;line-height:1.6;margin:8px 3px}
 .token-picker-search{width:100%;margin:9px 0 2px;border:1px solid #6a70a5;border-radius:11px;background:#101932;color:#fff;padding:10px 12px;outline-offset:3px}
@@ -189,7 +189,7 @@ function tokenIconUrl(symbol, net){
   const key=TOKEN_ICON_MAP[symbol] || symbol.toUpperCase();
   return TOKEN_ICON_BASE+key+'.svg';
 }
-function fallbackImage(img, text, bg){img.onerror=null;img.src='data:image/svg+xml;utf8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" rx="32" fill="${bg}"/><text x="50%" y="53%" dominant-baseline="middle" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="22" font-weight="700" fill="white">${text}</text></svg>`)}
+function fallbackImage(img, text, bg){const safe=String(text||'?').replace(/[^A-Za-z0-9]/g,'').slice(0,4).toUpperCase()||'?';img.onerror=null;img.src='data:image/svg+xml;utf8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" rx="32" fill="${bg}"/><text x="50%" y="53%" dominant-baseline="middle" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="22" font-weight="700" fill="white">${safe}</text></svg>`)}
 function setImg(el, src, fallbackText, bg='#384780'){ el.src=src; el.onerror=()=>fallbackImage(el, fallbackText.slice(0,4).toUpperCase(), bg); }
 function walletTokenKey(item){return 'wallet:'+item.chainId+':'+item.contract.toLowerCase()}
 function walletTokenFromKey(key,net=chain){
@@ -204,13 +204,14 @@ function tokenDisplay(key){
  return item?String(item.symbol||'Unknown token').slice(0,36):String(key);
 }
 function tokenIconForSelection(key){
- // Never show an official asset logo for an unknown contract using the same symbol.
- return walletTokenFromKey(key)?null:tokenIconUrl(key,chain);
+  // Known logos are matched by exact chain + contract, not by untrusted symbol alone.
+  const owned=walletTokenFromKey(key);
+  return owned?(owned.logo||null):tokenIconUrl(key,chain);
 }
 function setTokenView(prefix, symbol){
  const own=walletTokenFromKey(symbol);
- if(own)fallbackImage($(prefix+'Icon'),tokenDisplay(symbol).replace(/[^A-Za-z0-9]/g,'').slice(0,4).toUpperCase()||'?','#384780');
- else setImg($(prefix+'Icon'), tokenIconForSelection(symbol), symbol, '#2f4ca0');
+ if(own&&!own.logo)fallbackImage($(prefix+'Icon'),tokenDisplay(symbol),'#384780');
+ else setImg($(prefix+'Icon'),tokenIconForSelection(symbol),tokenDisplay(symbol),'#2f4ca0');
  setImg($(prefix+'Badge'), networkIconUrl(chain), chain.symbol || chain.name.slice(0,2), '#0f1634');
   $(prefix+'Symbol').textContent=tokenDisplay(symbol);
  $(prefix+'NetworkTag').textContent=chain.name;
@@ -220,7 +221,7 @@ function setTokenView(prefix, symbol){
 function showModal(title,items){$('modalTitle').textContent=title;const root=$('modalOptions');root.replaceChildren();items.forEach(o=>{
  if(o.heading){const label=document.createElement('div');label.className='token-picker-heading';label.textContent=o.heading;root.append(label);return;}
  if(o.note){const note=document.createElement('div');note.className='token-picker-note';note.textContent=o.note;root.append(note);return;}
- const btn=document.createElement('button');btn.type='button';btn.className='option'+(o.walletEntry?' token-picker-row':'');btn.disabled=!!o.disabled;if(o.icon || o.badge){const wrap=document.createElement('span');wrap.className='token-stack';const image=document.createElement('img');image.className='coin-logo';setImg(image,o.icon||o.badge,o.label,'#34457a');image.alt='';wrap.append(image);if(o.badge){const badge=document.createElement('img');badge.className='badge-logo';setImg(badge,o.badge,o.description||'', '#0f1634');badge.alt='';wrap.append(badge)}btn.append(wrap)}else{const circle=document.createElement('span');circle.className='coin-logo';circle.style.cssText='display:grid;place-items:center;color:#ffe37e;font-weight:900';circle.textContent=o.label.slice(0,2);btn.append(circle)}const holder=document.createElement('span');const label=document.createElement('strong');label.textContent=o.label;holder.append(label);if(o.description){const sub=document.createElement('small');sub.textContent=o.description;holder.append(sub)}btn.append(holder);if(o.contract)btn.dataset.contract=o.contract.toLowerCase();if(o.end){const end=document.createElement('span');end.className='end';end.textContent=o.end;btn.append(end)}btn.addEventListener('click',()=>{closeModal();o.select()});root.append(btn)});$('modalLayer').classList.add('open')}
+ const btn=document.createElement('button');btn.type='button';btn.className='option'+(o.walletEntry?' token-picker-row':'');btn.disabled=!!o.disabled;if(o.icon || o.badge){const wrap=document.createElement('span');wrap.className='token-stack';const image=document.createElement('img');image.className='coin-logo';if(o.icon)setImg(image,o.icon,o.label,'#34457a');else fallbackImage(image,o.label,'#34457a');image.alt='';wrap.append(image);if(o.badge){const badge=document.createElement('img');badge.className='badge-logo';setImg(badge,o.badge,o.description||'', '#0f1634');badge.alt='';wrap.append(badge)}btn.append(wrap)}else{const circle=document.createElement('span');circle.className='coin-logo';circle.style.cssText='display:grid;place-items:center;color:#ffe37e;font-weight:900';circle.textContent=o.label.slice(0,2);btn.append(circle)}const holder=document.createElement('span');const label=document.createElement('strong');label.textContent=o.label;holder.append(label);if(o.description){const sub=document.createElement('small');sub.textContent=o.description;holder.append(sub)}btn.append(holder);if(o.contract)btn.dataset.contract=o.contract.toLowerCase();if(o.end){const end=document.createElement('span');end.className='end';end.textContent=o.end;btn.append(end)}btn.addEventListener('click',()=>{closeModal();o.select()});root.append(btn)});$('modalLayer').classList.add('open')}
 function closeModal(){tokenModalWhich=null;$('modalLayer').classList.remove('open')}
 $('closeModal').onclick=closeModal;$('modalLayer').addEventListener('click',e=>{if(e.target===$('modalLayer'))closeModal()});document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 function updateLabels(){
@@ -238,7 +239,7 @@ function updateLabels(){
 }
 $('networkButton').onclick=()=>showModal('Choose network',NETWORKS.map(n=>({label:n.name,description:n.locked?'Planned network — not available yet':(n.vm==='evm'?'EVM network • Chain ID '+n.id:(n.vm.toUpperCase()+' network • wallet integration next phase')),icon:networkIconUrl(n),disabled:n.locked,end:n.locked?'🔒 Soon':(n.vm==='evm'?'':'Soon'),select:async()=>{chain=n;pay=n.tokens.includes('USDT')?'USDT':n.tokens[0];receive=n.tokens.find(t=>t!==pay)||pay;updateLabels();if(chain.vm!=='evm'){nativeWei=null;status(chain.name+' added to the design. Wallet connection for this network comes in a later phase.');return}if(account&&liveChainId!==chain.id){status('Switching wallet network…');await switchChain()}else if(account){await readNativeBalance()}else{status('')}}})));
 // Wallet assets appear in the EXISTING pay/receive dropdown, not under the Swap form.
-// All indexed chains are visible; only the selected chain is selectable in this phase.
+// All indexed chains are visible; selecting on another supported EVM chain switches the wallet.
 // A token's identity is its chain+contract, NEVER its name or symbol.
 function walletPickerItems(which){
  const other=which==='pay'?receive:pay;
@@ -259,18 +260,15 @@ function walletPickerItems(which){
    const pinned=item.native||!!(net&&ERC20_TOKENS[net.id]?.[label]?.toLowerCase()===item.contract?.toLowerCase());
    const officialKey=pinned&&net?.tokens.includes(label)?label:key;
    const locked=label.toUpperCase()==='APXN';
-   const selectable=!remote&&!locked&&!!net&&!!officialKey&&!!account;
+   const selectable=!locked&&!!net&&!!officialKey&&!!account;
    const meta=item.native?'Native coin':item.contract.slice(0,8)+'…'+item.contract.slice(-6);
    const description=(net?net.name:'EVM chain '+item.chainId)+' • '+meta+
      ' • Balance: '+assetLabel(item.raw,item.decimals);
-   return {label,description,contract:item.contract,icon:pinned&&net?tokenIconUrl(label,net):null,
+   return {label,description,contract:item.contract,icon:pinned&&net?tokenIconUrl(label,net):(item.logo||null),
      badge:net?networkIconUrl(net):null,walletEntry:true,
-     end:locked?'🔒 Soon':remote?'Switch network':officialKey===other?'Selected':'',
-     disabled:!selectable||officialKey===other,
-     select:()=>{
-       if(which==='pay')pay=officialKey;else receive=officialKey;
-       updateLabels();if(account)readNativeBalance();
-     }};
+     end:locked?'🔒 Soon':!net?'Network unsupported':remote?'Select + switch':officialKey===other?'Selected':'',
+      disabled:!selectable||(!remote&&officialKey===other),
+      select:()=>selectIndexedWalletToken(which,item,officialKey,net)};
  };
  const items=[];
  if(account){
@@ -281,7 +279,7 @@ function walletPickerItems(which){
    items.push(...here.sort((a,b)=>Number(b.native)-Number(a.native)||a.symbol.localeCompare(b.symbol)).map(t=>itemFor(t,false)));
    if(away.length){
      items.push({heading:'Your wallet • other networks'});
-     items.push({note:'These balances belong to other networks. Change the network above before choosing them.'});
+     items.push({note:'Select a token to switch to its supported EVM network. Unsupported chains stay visible but cannot be swapped here yet.'});
      items.push(...away.sort((a,b)=>a.chainId-b.chainId||a.symbol.localeCompare(b.symbol)).map(t=>itemFor(t,true)));
    }
  }
@@ -302,8 +300,28 @@ function walletPickerItems(which){
  items.push({note:'Unknown airdrops can be spam, unsellable or deceptive. Verify their contract before using a quote. No transaction is enabled.'});
  return items;
 }
+async function selectIndexedWalletToken(which,item,key,net){
+  if(!account||!wallet||!net||net.locked||net.vm!=='evm'){status('This wallet token network is not supported for quotes yet.');return;}
+  if(String(item.symbol||'').toUpperCase()==='APXN'){status('APXN is Coming Soon.');return;}
+  const switching=net.id!==chain.id;
+  if(switching){
+    chain=net;
+    // A different-chain token is never silently quoted against the old chain's other asset.
+    if(which==='pay'){
+      pay=key;receive=net.tokens.includes('USDT')&&key!=='USDT'?'USDT':net.symbol;
+      if(receive===pay)receive=net.tokens.find(t=>t!==pay)||pay;
+    }else{
+      receive=key;pay=net.symbol;
+      if(receive===pay)pay=net.tokens.find(t=>t!==receive)||receive;
+    }
+  }else if(which==='pay')pay=key;else receive=key;
+  updateLabels();
+  if(!account||!wallet)return;
+  if(liveChainId!==chain.id){status('Switching your wallet to '+chain.name+'…');await switchChain();}
+  else await readNativeBalance();
+}
 function chooseToken(which){
- tokenModalWhich=which;
+  tokenModalWhich=which;
  showModal('Choose token',walletPickerItems(which));
  const root=$('modalOptions');
  const search=document.createElement('input');search.type='search';search.className='token-picker-search';
@@ -741,7 +759,42 @@ function assetInteger(value){
  try{return BigInt(value)}catch(_){return null}
 }
 function assetNetwork(chainId){
- return NETWORKS.find(n=>n.vm==='evm'&&String(n.id)===String(chainId))||null;
+  return NETWORKS.find(n=>n.vm==='evm'&&String(n.id)===String(chainId))||null;
+}
+// Logos are display-only metadata, never proof of authenticity or permission to swap.
+function safeTokenLogo(value){
+  if(typeof value!=='string'||value.length>600)return null;
+  try{const url=new URL(value);
+    return url.protocol==='https:'&&!url.username&&!url.password&&!/^(localhost|127\.|0\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/i.test(url.hostname)?url.href:null;
+  }catch(_){return null;}
+}
+// An indexer might omit token logos; LI.FI may have contract-verified metadata for some tokens.
+async function enrichWalletTokenLogos(address,requestId,signal){
+  const holdings=walletAssets.filter(t=>!t.native&&!t.logo&&assetNetwork(t.chainId)).slice(0,24);
+  if(!holdings.length)return;
+  const current=()=>!signal.aborted&&requestId===walletAssetsRequestId&&
+    walletAssetsAccount?.toLowerCase()===address.toLowerCase()&&account?.toLowerCase()===address.toLowerCase();
+  let pointer=0,changed=false;
+  const worker=async()=>{
+    while(current()&&pointer<holdings.length){
+      const item=holdings[pointer++];
+      const abort=new AbortController();const timeout=setTimeout(()=>abort.abort(),6500);
+      const stop=()=>abort.abort();signal.addEventListener('abort',stop,{once:true});
+      try{
+        const query=new URLSearchParams({chain:String(item.chainId),token:item.contract});
+        const resp=await fetch('https://li.quest/v1/token?'+query,{signal:abort.signal,headers:{Accept:'application/json'},credentials:'omit'});
+        if(!resp.ok||!current())continue;
+        const info=await resp.json();
+        if(!current()||Number(info?.chainId)!==Number(item.chainId)||
+           String(info?.address||'').toLowerCase()!==item.contract.toLowerCase())continue;
+        const logo=safeTokenLogo(info.logoURI);
+        if(logo){item.logo=logo;changed=true;}
+      }catch(_){/* Unknown, unlisted, or rate-limited assets keep a neutral initials icon. */}
+      finally{clearTimeout(timeout);signal.removeEventListener('abort',stop);}
+    }
+  };
+  await Promise.all([worker(),worker(),worker()]);
+  if(current()&&changed)renderWalletAssets();
 }
 function assetLabel(raw,decimals){
  const d=Number(decimals);
@@ -749,8 +802,18 @@ function assetLabel(raw,decimals){
  return formatUnits(raw,d,8);
 }
 function renderWalletAssets(){
- // Updates just the existing pay/receive selector; the separate holdings card is removed.
- if(tokenModalWhich&&$('modalLayer').classList.contains('open'))chooseToken(tokenModalWhich);
+  // Keep search text and scrolling when refreshed balances/logos update the open selector.
+  if(tokenModalWhich&&$('modalLayer').classList.contains('open')){
+    const old=$('modalOptions').querySelector('.token-picker-search');
+    const query=old?.value||'';const scroll=$('modalLayer').querySelector('.modal')?.scrollTop||0;
+    chooseToken(tokenModalWhich);
+    const next=$('modalOptions').querySelector('.token-picker-search');
+    if(next&&query){next.value=query;next.dispatchEvent(new Event('input'));}
+    $('modalLayer').querySelector('.modal').scrollTop=scroll;
+  }
+  // Do not clear a valid LI.FI quote merely to update a token's visual identity.
+  if(walletTokenFromKey(pay))setTokenView('pay',pay);
+  if(walletTokenFromKey(receive))setTokenView('receive',receive);
 }
 async function assetPages(address,endpoint,controller,valid){
  const all=[],seen=new Set();let next=null,complete=false;
@@ -800,7 +863,8 @@ async function loadWalletAssets(force=false){
      const decimals=metadataDecimals===null||metadataDecimals===undefined?null:Number(metadataDecimals);
      const token={chainId:id,contract,native:false,raw,
        decimals:Number.isInteger(decimals)&&decimals>=0&&decimals<=36?decimals:null,
-       symbol:String(entry?.tokenSymbol||'Unknown token').slice(0,36)};
+       symbol:String(entry?.tokenSymbol||'Unknown token').slice(0,36),
+        logo:safeTokenLogo(entry?.logoURI||entry?.tokenLogo||entry?.imageUrl)};
      holdings.set(id+':'+contract.toLowerCase(),token);
    }
    // Native gas balances from all indexed EVM networks, plus live selected balance above.
@@ -818,7 +882,9 @@ async function loadWalletAssets(force=false){
    walletAssets=Array.from(holdings.values());
    walletAssetsPartial=!tokens.complete||!nativeComplete;
    walletAssetsUpdatedAt=Date.now();walletAssetsLoading=false;
-   renderWalletAssets();
+    renderWalletAssets();
+    // Optional logos load after balances: slow metadata never blocks token selection.
+    void enrichWalletTokenLogos(address,currentId,controller.signal);
  }catch(e){
    if(!valid())return;
    walletAssetsPartial=true;walletAssetsLoading=false;
