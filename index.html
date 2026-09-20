@@ -19,6 +19,11 @@ main{width:min(1120px,calc(100% - 32px));margin:48px auto 64px;display:grid;grid
 .swap{border:1px solid #6b75b4;background:linear-gradient(160deg,#222249ef,#101b34f7 70%);border-radius:30px;padding:25px;box-shadow:0 28px 80px #0009,0 0 0 5px #7f6bf009}.swap h2{font-size:25px;margin:0 0 5px}.sub{color:var(--muted);margin:0 0 20px;font-size:13px}
 .network-button{width:100%;display:flex;align-items:center;gap:10px;border-radius:16px;background:#22264c;border:1px solid #9a88ea76;color:#fff;padding:11px 13px;text-align:left;margin-bottom:15px}.network-button small{margin-left:auto;color:#fbe48c;font-size:12px}.network-logo,.coin-logo,.badge-logo{object-fit:cover;background:#142142;flex:none;border:1px solid #ffffff50}.network-logo,.coin-logo{border-radius:50%}.network-logo{width:29px;height:29px}.coin-logo{width:44px;height:44px}.badge-logo{width:20px;height:20px;border-radius:50%;position:absolute;right:-3px;bottom:-3px;background:#0b1024;border:2px solid #0b1024;box-shadow:0 0 0 1px #ffe06a8c}
 .field{border:1px solid #535b86;border-radius:20px;padding:14px;margin:10px 0;background:#151d3a}.row{display:flex;align-items:center;justify-content:space-between;gap:10px}.hint{font-size:12px;color:#b8c2e5}.amount{min-width:0;width:100%;background:none;border:0;color:#fff;font-size:clamp(23px,3vw,33px);font-weight:700;outline:none}.amount::placeholder{color:#7b86a8}
+/* V13.3: fit long airdrop balances without changing the precise editable amount. */
+.amount.long-amount{font-size:clamp(14px,3.3vw,21px);letter-spacing:-.02em}
+.amount.very-long-amount{font-size:clamp(12px,2.7vw,16px);letter-spacing:-.035em}
+.amount-compact{margin:6px 0 0;font-size:11px;line-height:1.45;color:#c7d2f4;overflow-wrap:anywhere}
+.amount-compact[hidden]{display:none}
 .coin-select{flex:none;min-width:210px;display:flex;gap:10px;align-items:center;justify-content:space-between;border:1px solid #7479b1;border-radius:30px;background:#2b315d;color:white;padding:7px 10px;font-weight:800;text-align:left}.token-stack{position:relative;display:inline-flex;align-items:center;justify-content:center}.coin-meta{display:flex;flex-direction:column;min-width:0;align-items:flex-start;line-height:1.1}.coin-meta span{font-size:13px}.coin-meta small{font-size:10px;color:#b9c4ee;font-weight:700;letter-spacing:.01em;margin-top:4px}.coin-main{font-size:13px;font-weight:800}.coin-select .left{display:flex;align-items:center;gap:10px;min-width:0}.chev{margin-left:8px;font-size:16px;color:#f4e7a3}
 .middle{display:flex;justify-content:center;margin:-2px 0}.reverse{border:2px solid var(--yellow);color:var(--yellow);background:#262650;border-radius:50%;height:43px;width:43px;font-size:24px}
 .fee{display:flex;justify-content:space-between;align-items:center;color:#c9d2eb;font-size:13px;margin:18px 2px}.fee strong{color:#ffe06a;font-size:18px}.swap-action{width:100%;padding:16px;background:linear-gradient(100deg,#fff078,#ffce39);border:2px solid #ffefa8;border-radius:17px;font-weight:900;color:#21183b;font-size:17px;box-shadow:0 0 18px #ffdc5236}.foot{margin-top:12px;font-size:12px;color:var(--muted);line-height:1.5;text-align:center}.notice{border-radius:14px;border:1px solid #5767a0;padding:11px 12px;background:#1b2750;color:#d4e0ff;font-size:12px;margin-top:14px;line-height:1.5}.status{margin-top:8px;min-height:18px;font-size:12px;color:#ffe88b}
@@ -58,7 +63,7 @@ footer{margin:28px auto;text-align:center;color:#7e8db5;font-size:12px;padding:0
 <p class="sub">Multichain preview • live token balances + LI.FI quotes</p>
 <button type="button" class="network-button" id="networkButton"><img class="network-logo" id="networkIcon" alt="BNB Smart Chain" src="https://raw.githubusercontent.com/0xa3k5/web3icons/main/packages/core/src/svgs/networks/background/binance-smart-chain.svg"><strong id="networkName">BNB Smart Chain</strong><small>Change ▾</small></button>
 <div class="wallet-details" id="walletDetails"><div class="row"><span>Wallet: <strong id="walletAddress">—</strong></span><span id="walletBalance">—</span></div><div><button id="disconnectButton" type="button">Disconnect from page</button></div></div>
-<div class="field"><div class="row hint"><span>You pay</span><span class="balance-actions"><span id="payBalance">Balance: —</span><button id="maxButton" type="button" class="max-button" disabled>MAX</button></span></div><div class="row mobile-stack" style="margin-top:12px"><input class="amount" id="payAmount" inputmode="decimal" aria-label="Amount to pay" placeholder="0.0"><button class="coin-select" id="payCoin" type="button"><span class="left"><span class="token-stack"><img class="coin-logo" id="payIcon" alt="USDT"><img class="badge-logo" id="payBadge" alt="BNB Smart Chain"></span><span class="coin-meta"><span class="coin-main" id="paySymbol">USDT</span><small id="payNetworkTag">BNB Smart Chain</small></span></span><span class="chev">⌄</span></button></div></div>
+<div class="field"><div class="row hint"><span>You pay</span><span class="balance-actions"><span id="payBalance">Balance: —</span><button id="maxButton" type="button" class="max-button" disabled>MAX</button></span></div><div class="row mobile-stack" style="margin-top:12px"><input class="amount" id="payAmount" inputmode="decimal" aria-label="Amount to pay" placeholder="0.0"><button class="coin-select" id="payCoin" type="button"><span class="left"><span class="token-stack"><img class="coin-logo" id="payIcon" alt="USDT"><img class="badge-logo" id="payBadge" alt="BNB Smart Chain"></span><span class="coin-meta"><span class="coin-main" id="paySymbol">USDT</span><small id="payNetworkTag">BNB Smart Chain</small></span></span><span class="chev">⌄</span></button></div><div id="payAmountCompact" class="amount-compact" hidden></div></div>
 <div class="middle"><button class="reverse" id="reverseButton" type="button" aria-label="Reverse pair">↕</button></div>
 <div class="field"><div class="row hint"><span>You receive</span><span id="receiveBalance">Balance: —</span></div><div class="row mobile-stack" style="margin-top:12px"><input class="amount" id="receiveAmount" aria-label="Estimated receive amount" placeholder="—" readonly><button class="coin-select" id="receiveCoin" type="button"><span class="left"><span class="token-stack"><img class="coin-logo" id="receiveIcon" alt="BNB"><img class="badge-logo" id="receiveBadge" alt="BNB Smart Chain"></span><span class="coin-meta"><span class="coin-main" id="receiveSymbol">BNB</span><small id="receiveNetworkTag">BNB Smart Chain</small></span></span><span class="chev">⌄</span></button></div></div>
 <div class="fee"><span>APXN planned fee (not charged)</span><strong>0.10%</strong></div>
@@ -74,6 +79,7 @@ footer{margin:28px auto;text-align:center;color:#7e8db5;font-size:12px;padding:0
  <div class="row"><span>APXN fee — proposed (source token)</span><strong id="quoteApxnFee">—</strong></div>
  <div class="row"><span>APXN fee — approx. USD</span><strong id="quoteApxnFeeUsd">—</strong></div>
  <div class="quote-note" id="quoteNote">LI.FI estimate only. The APXN fee is hypothetical, NOT included in the receive amount and NOT charged. Final execution price may change.</div>
+ <div id="economicsWarning" class="spend-warning" role="status" aria-live="polite" hidden></div>
 </div>
 <button class="swap-action" id="swapButton" type="button" disabled aria-disabled="true" title="No transaction execution in this preview">Swap disabled — preview</button>
 <div class="status" id="status"></div>
@@ -208,6 +214,29 @@ function tokenIconForSelection(key){
   const owned=walletTokenFromKey(key);
   return owned?(owned.logo||null):tokenIconUrl(key,chain);
 }
+// An abbreviated reading aid is never used as the value sent to LI.FI or the wallet.
+function readableAmountExact(value, max=13){
+ const input=String(value||'').trim();
+ if(!/^\d+(?:\.\d+)?$/.test(input))return null;
+ const [whole,frac='']=input.split('.');
+ if(input.length<=17||whole.length<7)return null;
+ const groups=[['T',12],['B',9],['M',6],['K',3]];
+ const pair=groups.find(([_,pow])=>whole.length>pow);
+ if(!pair)return null;
+ const [suffix,power]=pair;
+ const lead=whole.slice(0,-power),tail=(whole.slice(-power)+frac).slice(0,3);
+ return lead+(tail&&/[^0]/.test(tail)?'.'+tail.replace(/0+$/,''):'')+suffix;
+}
+function updatePayAmountDisplay(){
+ const input=$('payAmount'),value=input.value.trim();
+ input.classList.toggle('long-amount',value.length>17&&value.length<=27);
+ input.classList.toggle('very-long-amount',value.length>27);
+ // Keep ALL digits editable. The shorthand is only a secondary caption.
+ input.title=value.length>17?'Exact amount: '+value:'';
+ const hint=$('payAmountCompact'),short=readableAmountExact(value);
+ hint.hidden=!short;
+ hint.textContent=short?'≈ '+short+' '+tokenDisplay(pay)+' • exact value above':'';
+}
 function setTokenView(prefix, symbol){
  const own=walletTokenFromKey(symbol);
  if(own&&!own.logo)fallbackImage($(prefix+'Icon'),tokenDisplay(symbol),'#384780');
@@ -233,7 +262,7 @@ function updateLabels(){
   receive=(chain.tokens.includes(receive)||walletTokenFromKey(receive))&&receive!==pay?
     receive:(chain.tokens.find(t=>t!==pay)||pay);
  $('networkName').textContent=chain.name; setImg($('networkIcon'), networkIconUrl(chain), chain.symbol||chain.name.slice(0,2), '#223057'); $('networkIcon').alt=chain.name;
- setTokenView('pay', pay); setTokenView('receive', receive);
+ setTokenView('pay', pay); setTokenView('receive', receive);updatePayAmountDisplay();
  $('receiveAmount').value='';$('payBalance').textContent='Balance: —';$('receiveBalance').textContent='Balance: —';refreshWalletHeader();
  refreshSpendValidation();
 }
@@ -435,7 +464,7 @@ $('maxButton').onclick=()=>{
  if(native&&nativeWei!==null&&BigInt(nativeWei)===balance){
    smartMaxState={chainId:chain.id,account,source:pay,target:receive,balanceRaw:balance,refinements:0};
  }
- $('payAmount').value=exactBalanceString(raw,payBalanceInfo.decimals);
+ $('payAmount').value=exactBalanceString(raw,payBalanceInfo.decimals);updatePayAmountDisplay();
  scheduleQuote();
  status(native?(fromLiveGas?'MAX calculated from the last LI.FI gas estimate; confirming the new amount…':'MAX requesting a probe quote to calculate native gas, then it will adjust automatically…'):
    'MAX set to the full verified '+tokenDisplay(pay)+' token balance. Network gas is paid separately.');
@@ -446,6 +475,7 @@ function clearQuote(message){
  if(quoteAbort){quoteAbort.abort();quoteAbort=null;}
  $('receiveAmount').value='';
  $('quotePanel').hidden=true;
+ $('economicsWarning').hidden=true;$('economicsWarning').textContent='';
  quoteGasInfo=null;
  quoteReadiness=null; // Never carry an old preview confirmation across inputs or wallet/network changes.
  quoteUpdatedAt=0; // Once the exact request changes, the previous estimate is no longer current.
@@ -642,7 +672,7 @@ function refineNativeMax(net,source,target,addr,fromAmount){
  }
  active.refinements++;
  // The provisional quote must NEVER be shown for the newly adjusted input.
- $('payAmount').value=exactBalanceString(desired,payBalanceInfo.decimals);
+ $('payAmount').value=exactBalanceString(desired,payBalanceInfo.decimals);updatePayAmountDisplay();
  scheduleQuote(); // Clears the old quote and asks LI.FI to price the exact revised amount.
  status('MAX recalculating quote '+(active.refinements+1)+'/'+(MAX_QUOTE_REFINEMENTS+1)+' with reserved gas…');
  return true;
@@ -657,6 +687,38 @@ function sumUsd(costs){
    }
  }
  return hasNumber?'$'+total.toFixed(4):'Not reported';
+}
+// Economic information is advisory and separate from balance/gas safety checks.
+// Amount and minimum output validation continue using integer base units.
+function quoteCostUsd(costs){
+ if(!Array.isArray(costs)||!costs.length)return null;
+ let total=0;
+ for(const item of costs){
+   if(item?.amountUSD===undefined||item?.amountUSD===null||String(item.amountUSD).trim()==='')return null;
+   const n=Number(item.amountUSD);
+   if(!Number.isFinite(n)||n<0)return null;
+   total+=n;
+ }
+ return Number.isFinite(total)?total:null;
+}
+function showQuoteEconomics(result,checked){
+ const box=$('economicsWarning');box.hidden=true;box.textContent='';
+ const gasUsd=quoteCostUsd(result.estimate?.gasCosts);
+ const providerUsd=quoteCostUsd(result.estimate?.feeCosts);
+ // LI.FI provider fees may already be reflected in toAmount; do not deduct them twice.
+ const listedPrice=result.action?.toToken?.priceUSD;
+ const receivePrice=listedPrice===null||listedPrice===undefined?NaN:Number(listedPrice);
+ const receiveTokens=Number(exactBalanceString(checked.estimated,checked.decimalsOut));
+ const receiveUsd=receiveTokens*receivePrice;
+ if(gasUsd===null||!Number.isFinite(receiveUsd)||receiveUsd<=0||!Number.isFinite(receivePrice)||receivePrice<=0)return;
+ const fraction=gasUsd/receiveUsd;
+ if(!Number.isFinite(fraction)||fraction<0.25)return;
+ const gasText='$'+gasUsd.toFixed(4),recvText='$'+receiveUsd.toFixed(4);
+ box.hidden=false;
+ box.textContent='High estimated gas relative to the swap: '+gasText+' is about '+(fraction*100).toFixed(0)+
+   '% of the estimated receive value ('+recvText+'). '+
+   (providerUsd!==null?'Provider fees: $'+providerUsd.toFixed(4)+'; they may already be reflected in the quoted receive amount. ':'')+
+   'Quote only: tokens may still be unsellable and network gas can change. APXN fee is not charged.';
 }
 function formatQuoteAmount(raw,decimals){
  if(!/^\d+$/.test(String(raw)))throw new Error('Quote amount is invalid.');
@@ -728,6 +790,7 @@ async function fetchLiveQuote(id){
    $('quoteApxnFeeUsd').textContent=result.action.fromToken?.priceUSD!=null && Number.isFinite(usdPrice) && usdPrice>0 && Number.isFinite(feeAmountNumber)
      ?'≈ $'+(feeAmountNumber*usdPrice).toFixed(4)+' (not charged)':'Not reported (not charged)';
    $('quotePanel').hidden=false;
+   showQuoteEconomics(result,checked);
    quoteUpdatedAt=Date.now(); // Only a successfully received, matching quote is marked fresh.
    quoteReadiness={requestId:id,chainId:selected.id,account:addr,wallet:currentWallet,
      source,target,fromToken:fromToken.toLowerCase(),toToken:toToken.toLowerCase(),
@@ -737,6 +800,7 @@ async function fetchLiveQuote(id){
  }catch(e){
    if(!valid())return;
    $('receiveAmount').value='';$('quotePanel').hidden=true;
+   $('economicsWarning').hidden=true;$('economicsWarning').textContent='';
    quoteGasInfo=null;quoteReadiness=null;quoteUpdatedAt=0;refreshSpendValidation();
    if(smartMaxState){smartMaxState=null;status('MAX could not be finalized. Try another amount or press MAX again.');}
    $('quoteFeedback').textContent=e.name==='AbortError'?'Quote request timed out. Try again.':(e instanceof TypeError?'Could not contact LI.FI. Check your network and browser.':String(e.message||'Quote unavailable.'));
@@ -745,7 +809,7 @@ async function fetchLiveQuote(id){
    if(quoteAbort===controller)quoteAbort=null;
  }
 }
-$('payCoin').onclick=()=>chooseToken('pay');$('receiveCoin').onclick=()=>chooseToken('receive');$('reverseButton').onclick=()=>{[pay,receive]=[receive,pay];updateLabels();if(account)readNativeBalance()};$('payAmount').addEventListener('input',()=>{smartMaxState=null;scheduleQuote()});
+$('payCoin').onclick=()=>chooseToken('pay');$('receiveCoin').onclick=()=>chooseToken('receive');$('reverseButton').onclick=()=>{[pay,receive]=[receive,pay];updateLabels();if(account)readNativeBalance()};$('payAmount').addEventListener('input',()=>{updatePayAmountDisplay();smartMaxState=null;scheduleQuote()});
 // V13.1: read-only EVM token discovery, shown in the existing currency dropdown.
 function clearWalletAssets(){
  ++walletAssetsRequestId;
@@ -1019,6 +1083,7 @@ setInterval(()=>{refreshStaleQuote();safetyAuditVisibleQuote();},QUOTE_REFRESH_C
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){refreshStaleQuote();safetyAuditVisibleQuote();}});
 window.addEventListener('focus',()=>{refreshStaleQuote();safetyAuditVisibleQuote();});
 updateLabels();
+updatePayAmountDisplay();
 </script>
 </body>
 </html>
