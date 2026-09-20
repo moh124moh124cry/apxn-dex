@@ -124,7 +124,7 @@ const TOKEN_ICON_MAP={
 const $=id=>document.getElementById(id);
 // Pinned contract addresses. Symbols alone are NOT contract identities: bridged variants
 // such as USDC.e or USDbC are intentionally not substituted for the listed tokens.
-// Add other tokens only after verifying their contracts for that specific network.
+// Missing common-token contracts are resolved per network through LI.FI; never guess by symbol.
 const ERC20_TOKENS=Object.freeze({
   56: {
     USDT:'0x55d398326f99059fF775485246999027B3197955',
@@ -152,6 +152,12 @@ const BALANCE_OF_SELECTOR='0x70a08231'; // balanceOf(address)
 const DECIMALS_SELECTOR='0x313ce567';   // decimals()
 // Quote requests use LI.FI's public read-only API. Never submit transactionRequest.
 const LIFI_QUOTE_URL='https://li.quest/v1/quote';
+// V13.4: resolve a missing COMMON token by chain + symbol through LI.FI token metadata.
+// Discovered wallet tokens always use their exact indexed contract instead.
+const LIFI_TOKEN_URL='https://li.quest/v1/token';
+const TOKEN_CATALOG_CACHE_MS=600000;
+const TOKEN_CATALOG_RETRY_MS=45000;
+const resolvedTokenCatalog=new Map();
 const NATIVE_TOKEN='0x0000000000000000000000000000000000000000';
 const QUOTE_DEBOUNCE_MS=1000;
 // V13: no API key, wallet permissions, or backend required. Read-only public EVM indexer.
@@ -319,7 +325,9 @@ function walletPickerItems(which){
  }).filter(Boolean));
  for(const t of chain.tokens){
    if(shown.has(t))continue;
-   items.push({label:t,description:'On '+chain.name,icon:tokenIconUrl(t,chain),badge:networkIconUrl(chain),
+   items.push({label:t,description:'On '+chain.name+
+      (getQuoteTokenAddress(chain,t)?'':' • LI.FI token contract checked on selection'),
+      icon:tokenIconUrl(t,chain),badge:networkIconUrl(chain),
      end:t===other?'Selected':'',disabled:t===other,select:()=>{
        if(which==='pay')pay=t;else receive=t;
        updateLabels();if(account)readNativeBalance();
@@ -466,7 +474,7 @@ $('maxButton').onclick=()=>{
  }
  $('payAmount').value=exactBalanceString(raw,payBalanceInfo.decimals);updatePayAmountDisplay();
  scheduleQuote();
- status(native?(fromLiveGas?'MAX calculated from the last LI.FI gas estimate; confirming the new amount…':'MAX requesting a probe quote to calculate native gas, then it will adjust automatically…'):
+ status(native?(fromLiveGas?'MAX calculated from the last LI.FI gas estimate; confirming the new amount…':'MAX checking token contracts before requesting native gas; it will adjust automatically if a quote is available…'):
    'MAX set to the full verified '+tokenDisplay(pay)+' token balance. Network gas is paid separately.');
 };
 function clearQuote(message){
@@ -489,9 +497,13 @@ function scheduleQuote(){
  if(chain.locked||chain.vm!=='evm'){$('quoteFeedback').textContent=chain.name+' is a visual preview: live quotes not enabled.';return;}
  if(!account||!wallet){$('quoteFeedback').textContent='Connect your EVM wallet to see a live quote.';return;}
  if(liveChainId!==chain.id){$('quoteFeedback').textContent='Switch your wallet to '+chain.name+' for a quote.';return;}
- if(!getQuoteTokenAddress(chain,pay)||!getQuoteTokenAddress(chain,receive)){
-   $('quoteFeedback').textContent='Quote unavailable: contract address not verified for this token on '+chain.name+'.';return;
- }
+  // A missing local mapping is not a dead end: fetchLiveQuote resolves both selected
+  // common tokens using LI.FI chain-specific metadata before it requests a price.
+  if(pay==='APXN'||receive==='APXN'||
+     walletTokenFromKey(pay)?.symbol?.toUpperCase()==='APXN'||
+     walletTokenFromKey(receive)?.symbol?.toUpperCase()==='APXN'){
+    $('quoteFeedback').textContent='APXN is Coming Soon; no quote is enabled.';return;
+  }
  const id=quoteRequestId;
  $('quoteFeedback').textContent='Checking LI.FI quote…';
  quoteTimer=setTimeout(()=>{quoteTimer=null;fetchLiveQuote(id)},QUOTE_DEBOUNCE_MS);
@@ -585,11 +597,61 @@ function refreshStaleQuote(){
  refreshSpendValidation();
  readNativeBalance(); // Existing wallet flow schedules the exact-amount quote after fresh balances.
 }
+function tokenCatalogKey(net,symbol){return String(net.id)+':'+String(symbol).toUpperCase()}
 function getQuoteTokenAddress(net,symbol){
- if(net.vm!=='evm'||net.locked||symbol==='APXN'||walletTokenFromKey(symbol,net)?.symbol?.toUpperCase()==='APXN')return null;
- if(symbol===net.symbol)return NATIVE_TOKEN;
- const addr=walletTokenFromKey(symbol,net)?.contract||ERC20_TOKENS[net.id]?.[symbol];
- return typeof addr==='string'&&/^0x[a-fA-F0-9]{40}$/.test(addr)?addr:null;
+  if(net.vm!=='evm'||net.locked||symbol==='APXN'||walletTokenFromKey(symbol,net)?.symbol?.toUpperCase()==='APXN')return null;
+  if(symbol===net.symbol)return NATIVE_TOKEN;
+  // A discovered token is identified by its exact contract, never by the label.
+  const indexed=walletTokenFromKey(symbol,net)?.contract;
+  const pinned=ERC20_TOKENS[net.id]?.[symbol];
+  const cached=resolvedTokenCatalog.get(tokenCatalogKey(net,symbol));
+  const fromCatalog=cached?.address&&cached.until>Date.now()?cached.address:null;
+  const address=indexed||pinned||fromCatalog;
+  return typeof address==='string'&&/^0x[a-fA-F0-9]{40}$/.test(address)?address:null;
+}
+async function resolveQuoteTokenAddress(net,symbol,signal){
+  const current=getQuoteTokenAddress(net,symbol);
+  if(current)return current;
+  if(net.vm!=='evm'||net.locked||!Number.isSafeInteger(net.id)||
+     !net.tokens.includes(symbol)||symbol==='APXN')return null;
+  // Use the provider's specific chain+symbol lookup, not an unvalidated address search.
+  const key=tokenCatalogKey(net,symbol),now=Date.now();
+  const old=resolvedTokenCatalog.get(key);
+  if(old?.retryAt>now)throw new Error(old.reason);
+  if(signal?.aborted)throw new DOMException('Aborted','AbortError');
+  const url=new URL(LIFI_TOKEN_URL);
+  url.searchParams.set('chain',String(net.id));url.searchParams.set('token',symbol);
+  let response,info;
+  try{
+    response=await fetch(url.toString(),{method:'GET',headers:{Accept:'application/json'},
+      credentials:'omit',signal});
+    if(!response.ok){
+      const reason=response.status===404?'LI.FI does not list '+symbol+' on '+net.name+'. Select an exact token from your wallet or another asset.':
+        response.status===429?'LI.FI token lookup is rate-limited. Try again shortly.':
+        'Could not identify '+symbol+' on '+net.name+' (LI.FI HTTP '+response.status+').';
+      throw new Error(reason);
+    }
+    info=await response.json();
+  }catch(error){
+    if(signal?.aborted||error?.name==='AbortError')throw error;
+    const reason=error instanceof TypeError?'Could not reach LI.FI to identify '+symbol+' on '+net.name+'.':
+      String(error?.message||'Token lookup failed.').slice(0,190);
+    resolvedTokenCatalog.set(key,{retryAt:Date.now()+TOKEN_CATALOG_RETRY_MS,reason});
+    throw new Error(reason);
+  }
+  const address=String(info?.address||'');
+  const dec=Number(info?.decimals);
+  if(Number(info?.chainId)!==net.id||
+     String(info?.symbol||'').toUpperCase()!==symbol.toUpperCase()||
+     !/^0x[0-9a-f]{40}$/i.test(address)||address.toLowerCase()===NATIVE_TOKEN||
+     address.toLowerCase()==='0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'||
+     (info?.decimals===null||info?.decimals===undefined)||!Number.isInteger(dec)||dec<0||dec>36){
+    const reason='LI.FI did not return a matching '+symbol+' ERC-20 contract for '+net.name+'.';
+    resolvedTokenCatalog.set(key,{retryAt:Date.now()+TOKEN_CATALOG_RETRY_MS,reason});
+    throw new Error(reason);
+  }
+  resolvedTokenCatalog.set(key,{address,decimals:dec,until:Date.now()+TOKEN_CATALOG_CACHE_MS});
+  return address;
 }
 function quoteIsCurrent(id,netId,addr,source,target){
  return id===quoteRequestId && account===addr && chain.id===netId && liveChainId===netId && pay===source && receive===target;
@@ -728,13 +790,20 @@ async function fetchLiveQuote(id){
  const selected=chain,source=pay,target=receive,addr=account,currentWallet=wallet;
  const valid=()=>quoteIsCurrent(id,selected.id,addr,source,target)&&wallet===currentWallet;
  if(!valid())return;
- const fromToken=getQuoteTokenAddress(selected,source),toToken=getQuoteTokenAddress(selected,target);
- if(!fromToken||!toToken)return;
- quoteAttemptedAt=Date.now(); // Record the attempt, including failures, to avoid API retry loops.
- const controller=new AbortController();quoteAbort=controller;
- const timeout=setTimeout(()=>controller.abort(),16000);
- try{
-   let decimals=18;
+  quoteAttemptedAt=Date.now(); // Record the attempt, including failures, to avoid API retry loops.
+  const controller=new AbortController();quoteAbort=controller;
+  // Allow enough time for LI.FI contract discovery AND a subsequent live price request.
+  const timeout=setTimeout(()=>controller.abort(),26000);
+  try{
+    if(!getQuoteTokenAddress(selected,source)||!getQuoteTokenAddress(selected,target))
+      $('quoteFeedback').textContent='Identifying token contracts on '+selected.name+' through LI.FI…';
+    const [fromToken,toToken]=await Promise.all([
+      resolveQuoteTokenAddress(selected,source,controller.signal),
+      resolveQuoteTokenAddress(selected,target,controller.signal)
+    ]);
+    if(!valid())return;
+    if(!fromToken||!toToken)throw new Error('Token contract is unavailable for '+selected.name+'.');
+    let decimals=18;
    if(source!==selected.symbol){
      const hex=await currentWallet.request({method:'eth_call',params:[{to:fromToken,data:DECIMALS_SELECTOR},'latest']});
      if(!valid())return;
@@ -796,7 +865,10 @@ async function fetchLiveQuote(id){
      source,target,fromToken:fromToken.toLowerCase(),toToken:toToken.toLowerCase(),
      rawAmount:fromAmount,minRaw:BigInt(checked.minimum),estimatedRaw:BigInt(checked.estimated)};
    refreshSpendValidation();
-   $('quoteFeedback').textContent='Live LI.FI estimate received • '+new Date().toLocaleTimeString()+'. Read-only.';
+    const tokenResolved=(!ERC20_TOKENS[selected.id]?.[target]&&
+      !walletTokenFromKey(target,selected)&&target!==selected.symbol);
+    $('quoteFeedback').textContent='Live LI.FI estimate received • '+new Date().toLocaleTimeString()+
+      (tokenResolved?' • '+tokenDisplay(target)+' '+toToken.slice(0,8)+'…'+toToken.slice(-4):'')+'. Read-only.';
  }catch(e){
    if(!valid())return;
    $('receiveAmount').value='';$('quotePanel').hidden=true;
@@ -991,7 +1063,7 @@ function formatUnits(raw, decimals, maxPlaces=6){
  if(!display && val>0n)return whole===0n?'<0.'+'0'.repeat(Math.max(0,maxPlaces-1))+'1':whole.toString()+'…';
  return whole.toString()+(display?'.'+display:'');
 }
-function tokenAddress(symbol){return walletTokenFromKey(symbol)?.contract||ERC20_TOKENS[chain.id]?.[symbol]||null}
+function tokenAddress(symbol){return getQuoteTokenAddress(chain,symbol)}
 function isCurrentBalanceRequest(id, targetChain, targetAccount, targetWallet){
  return id===balanceRequestId && chain.id===targetChain && account===targetAccount && wallet===targetWallet && chain.vm==='evm' && liveChainId===targetChain;
 }
@@ -1001,19 +1073,28 @@ async function readOneToken(symbol, id, targetChain, targetAccount, targetWallet
    if(nativeWei===null)return {text:'Balance: unavailable',raw:null,decimals:null};
    return {text:'Balance: '+formatUnits(nativeWei,18),raw:BigInt(nativeWei),decimals:18};
  }
- const address=tokenAddress(symbol);
- if(!address)return {text:'Balance: Not configured',raw:null,decimals:null};
- if(!/^0x[a-fA-F0-9]{40}$/.test(address))return {text:'Balance: Not configured',raw:null,decimals:null};
- try{
-   const data=BALANCE_OF_SELECTOR+targetAccount.slice(2).toLowerCase().padStart(64,'0');
+  // Resolve an unpinned common token before reading its balance. No symbolic guess.
+  let address;
+  const targetNet=chain;
+  try{address=await resolveQuoteTokenAddress(targetNet,symbol)}
+  catch(_){return valid()?{text:'Balance: token not identified',raw:null,decimals:null}:null}
+  if(!valid())return null;
+  if(!address||!/^0x[a-fA-F0-9]{40}$/.test(address))
+    return {text:'Balance: token not identified',raw:null,decimals:null};
+  try{
+    const data=BALANCE_OF_SELECTOR+targetAccount.slice(2).toLowerCase().padStart(64,'0');
    const [balanceHex,decimalsHex]=await Promise.all([
      targetWallet.request({method:'eth_call',params:[{to:address,data},'latest']}),
      targetWallet.request({method:'eth_call',params:[{to:address,data:DECIMALS_SELECTOR},'latest']})
    ]);
    if(!valid())return null;
    if(!/^0x[0-9a-f]+$/i.test(balanceHex)||!/^0x[0-9a-f]+$/i.test(decimalsHex))throw new Error('Invalid contract response');
-   const decimals=Number(BigInt(decimalsHex));
-   return {text:'Balance: '+formatUnits(balanceHex,decimals),raw:BigInt(balanceHex),decimals};
+    const decimals=Number(BigInt(decimalsHex));
+    const cached=resolvedTokenCatalog.get(tokenCatalogKey(targetNet,symbol));
+    // Do not trust catalog decimals if the ERC-20 contract itself reports otherwise.
+    if(cached?.address?.toLowerCase()===address.toLowerCase()&&cached.decimals!==decimals)
+      return {text:'Balance: metadata mismatch',raw:null,decimals:null};
+    return {text:'Balance: '+formatUnits(balanceHex,decimals),raw:BigInt(balanceHex),decimals};
  }catch(e){
    return valid()?{text:'Balance: unavailable',raw:null,decimals:null}:null;
  }
@@ -1087,5 +1168,6 @@ updatePayAmountDisplay();
 </script>
 </body>
 </html>
+
 
 
