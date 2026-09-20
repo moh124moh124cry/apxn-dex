@@ -76,9 +76,11 @@ footer{margin:28px auto;text-align:center;color:#7e8db5;font-size:12px;padding:0
  <div class="row"><span>Route</span><strong id="quoteRoute">—</strong></div>
  <div class="row"><span>Estimated network gas (USD)</span><strong id="quoteGas">—</strong></div>
  <div class="row"><span>Provider fees (USD)</span><strong id="quoteProviderFees">—</strong></div>
+ <div class="row"><span>Est. receive value (USD)</span><strong id="quoteReceiveUsd">—</strong></div>
+ <div class="row"><span>Est. after gas only (USD)</span><strong id="quoteAfterGasUsd">—</strong></div>
  <div class="row"><span>APXN fee — proposed (source token)</span><strong id="quoteApxnFee">—</strong></div>
  <div class="row"><span>APXN fee — approx. USD</span><strong id="quoteApxnFeeUsd">—</strong></div>
- <div class="quote-note" id="quoteNote">LI.FI estimate only. The APXN fee is hypothetical, NOT included in the receive amount and NOT charged. Final execution price may change.</div>
+ <div class="quote-note" id="quoteNote">LI.FI estimate only. Est. after gas subtracts ONLY reported network gas from the estimated receive value: provider fees may already be in the quote and are NOT deducted again. Missing/unreported costs, price changes, and source-token cost are excluded. APXN fee is hypothetical, NOT charged or deducted.</div>
  <div id="economicsWarning" class="spend-warning" role="status" aria-live="polite" hidden></div>
 </div>
 <button class="swap-action" id="swapButton" type="button" disabled aria-disabled="true" title="No transaction execution in this preview">Swap disabled — preview</button>
@@ -484,6 +486,7 @@ function clearQuote(message){
  $('receiveAmount').value='';
  $('quotePanel').hidden=true;
  $('economicsWarning').hidden=true;$('economicsWarning').textContent='';
+ $('quoteReceiveUsd').textContent='—';$('quoteAfterGasUsd').textContent='—';
  quoteGasInfo=null;
  quoteReadiness=null; // Never carry an old preview confirmation across inputs or wallet/network changes.
  quoteUpdatedAt=0; // Once the exact request changes, the previous estimate is no longer current.
@@ -763,24 +766,45 @@ function quoteCostUsd(costs){
  }
  return Number.isFinite(total)?total:null;
 }
+// USD estimates are display-only; base-unit wallet/gas safety remains integer-based.
+// Less than $0.0001 must not appear as a misleading $0.0000.
+function economicsUsd(amount){
+  if(!Number.isFinite(amount))return 'Not available';
+  const sign=amount<0?'-':'';
+  const positive=Math.abs(amount);
+  if(positive>0&&positive<0.0001)return sign+'$<0.0001';
+  return sign+'$'+positive.toFixed(4);
+}
 function showQuoteEconomics(result,checked){
- const box=$('economicsWarning');box.hidden=true;box.textContent='';
- const gasUsd=quoteCostUsd(result.estimate?.gasCosts);
- const providerUsd=quoteCostUsd(result.estimate?.feeCosts);
- // LI.FI provider fees may already be reflected in toAmount; do not deduct them twice.
- const listedPrice=result.action?.toToken?.priceUSD;
- const receivePrice=listedPrice===null||listedPrice===undefined?NaN:Number(listedPrice);
- const receiveTokens=Number(exactBalanceString(checked.estimated,checked.decimalsOut));
- const receiveUsd=receiveTokens*receivePrice;
- if(gasUsd===null||!Number.isFinite(receiveUsd)||receiveUsd<=0||!Number.isFinite(receivePrice)||receivePrice<=0)return;
- const fraction=gasUsd/receiveUsd;
- if(!Number.isFinite(fraction)||fraction<0.25)return;
- const gasText='$'+gasUsd.toFixed(4),recvText='$'+receiveUsd.toFixed(4);
- box.hidden=false;
- box.textContent='High estimated gas relative to the swap: '+gasText+' is about '+(fraction*100).toFixed(0)+
-   '% of the estimated receive value ('+recvText+'). '+
-   (providerUsd!==null?'Provider fees: $'+providerUsd.toFixed(4)+'; they may already be reflected in the quoted receive amount. ':'')+
-   'Quote only: tokens may still be unsellable and network gas can change. APXN fee is not charged.';
+  const box=$('economicsWarning');box.hidden=true;box.textContent='';
+  const receiveOut=$('quoteReceiveUsd'),afterOut=$('quoteAfterGasUsd');
+  receiveOut.textContent='Not available';afterOut.textContent='Not available';
+  const gasUsd=quoteCostUsd(result.estimate?.gasCosts);
+  const providerUsd=quoteCostUsd(result.estimate?.feeCosts);
+  // Require a reported, positive destination-token USD price; never assume USDT/USDC = $1.
+  const rawPrice=result.action?.toToken?.priceUSD;
+  const receivePrice=rawPrice===null||rawPrice===undefined||String(rawPrice).trim()===''?NaN:Number(rawPrice);
+  const receiveTokens=Number(exactBalanceString(checked.estimated,checked.decimalsOut));
+  const receiveUsd=receiveTokens*receivePrice;
+  if(!Number.isFinite(receiveTokens)||receiveTokens<=0||!Number.isFinite(receivePrice)||receivePrice<=0||
+     !Number.isFinite(receiveUsd)||receiveUsd<=0)return;
+  receiveOut.textContent=economicsUsd(receiveUsd);
+  if(gasUsd===null)return; // No invented net value when ANY network gas cost is unreported.
+  // Show the receive-value estimate minus reported NETWORK GAS ONLY, never subtract
+  // provider fees a second time: LI.FI's toAmount can already reflect them.
+  const afterGas=receiveUsd-gasUsd;
+  if(!Number.isFinite(afterGas))return;
+  afterOut.textContent=economicsUsd(afterGas);
+  const fraction=gasUsd/receiveUsd;
+  if(!Number.isFinite(fraction)||fraction<0.25)return;
+  box.hidden=false;
+  box.textContent=(gasUsd>=receiveUsd?
+    'Estimated network gas equals or exceeds the entire quoted receive value. ':
+    'High estimated gas relative to this swap. ')+
+    'Gas '+economicsUsd(gasUsd)+' is about '+(fraction*100).toFixed(0)+'% of the estimated receive value ('+
+    economicsUsd(receiveUsd)+'). Est. after gas ONLY: '+economicsUsd(afterGas)+'. '+
+    (providerUsd!==null?'Provider fees shown separately: '+economicsUsd(providerUsd)+'; they may already be reflected in the quote and are not deducted again. ':'')+
+    'This is not profit: the source tokens have value, other costs may apply, airdrops may be unsellable and gas can change. APXN fee is not charged.';
 }
 function formatQuoteAmount(raw,decimals){
  if(!/^\d+$/.test(String(raw)))throw new Error('Quote amount is invalid.');
@@ -873,6 +897,7 @@ async function fetchLiveQuote(id){
    if(!valid())return;
    $('receiveAmount').value='';$('quotePanel').hidden=true;
    $('economicsWarning').hidden=true;$('economicsWarning').textContent='';
+   $('quoteReceiveUsd').textContent='—';$('quoteAfterGasUsd').textContent='—';
    quoteGasInfo=null;quoteReadiness=null;quoteUpdatedAt=0;refreshSpendValidation();
    if(smartMaxState){smartMaxState=null;status('MAX could not be finalized. Try another amount or press MAX again.');}
    $('quoteFeedback').textContent=e.name==='AbortError'?'Quote request timed out. Try again.':(e instanceof TypeError?'Could not contact LI.FI. Check your network and browser.':String(e.message||'Quote unavailable.'));
@@ -1168,6 +1193,7 @@ updatePayAmountDisplay();
 </script>
 </body>
 </html>
+
 
 
 
