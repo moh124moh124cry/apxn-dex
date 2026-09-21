@@ -285,7 +285,8 @@ function updateLabels(){
   lastPayAmountContext=payAmountContext;
   $('networkName').textContent=chain.name; setImg($('networkIcon'), networkIconUrl(chain), chain.symbol||chain.name.slice(0,2), '#223057'); $('networkIcon').alt=chain.name;
  setTokenView('pay', pay); setTokenView('receive', receive);updatePayAmountDisplay();
- $('receiveAmount').value='';$('payBalance').textContent='Balance: —';$('receiveBalance').textContent='Balance: —';refreshWalletHeader();
+ $('receiveAmount').value='';$('payBalance').textContent='Balance: —';$('receiveBalance').textContent='Balance: —';
+   $('payBalance').title='';$('receiveBalance').title='';refreshWalletHeader();
  refreshSpendValidation();
 }
 $('networkButton').onclick=()=>showModal('Choose network',NETWORKS.map(n=>({label:n.name,description:n.locked?'Planned network — not available yet':(n.vm==='evm'?'EVM network • Chain ID '+n.id:(n.vm.toUpperCase()+' network • wallet integration next phase')),icon:networkIconUrl(n),disabled:n.locked,end:n.locked?'🔒 Soon':(n.vm==='evm'?'':'Soon'),select:async()=>{chain=n;pay=n.tokens.includes('USDT')?'USDT':n.tokens[0];receive=n.tokens.find(t=>t!==pay)||pay;updateLabels();if(chain.vm!=='evm'){nativeWei=null;status(chain.name+' added to the design. Wallet connection for this network comes in a later phase.');return}if(account&&liveChainId!==chain.id){status('Switching wallet network…');await switchChain()}else if(account){await readNativeBalance()}else{status('')}}})));
@@ -845,6 +846,31 @@ function formatQuoteAmount(raw,decimals){
  if(!/^\d+$/.test(String(raw)))throw new Error('Quote amount is invalid.');
  return formatUnits(raw,decimals,8);
 }
+// V13.8: show separate, accurate causes for LI.FI route and wallet balance failures.
+// The server's no-route answer does not establish WHY the route was unavailable.
+function routeAlternative(net,source,target){
+ return target==='USDT'&&source!=='USDC'&&net.tokens.includes('USDC')?
+   ' You can try USDC on '+net.name+' instead; availability is not guaranteed and your selection will not change automatically.':'';
+}
+function quoteFailureMessage(error,net,source,target){
+ if(error?.quoteKind==='no-route')return 'No LI.FI quote for '+tokenDisplay(source)+' → '+tokenDisplay(target)+
+   ' on '+net.name+' at this amount. LI.FI did not identify whether amount, liquidity or provider availability caused it. Try another amount or token.'+
+   routeAlternative(net,source,target);
+ if(error?.quoteKind==='rate-limit')return 'LI.FI is rate-limiting quotes. Wait and try again later.';
+ if(error?.name==='AbortError')return 'LI.FI quote request timed out. Try again.';
+ if(error instanceof TypeError)return 'Could not contact LI.FI. Check your connection and try again.';
+ return String(error?.message||'Quote unavailable.').slice(0,230);
+}
+function maxFailureMessage(error,net,source,target){
+ return 'MAX could not finalize the native gas reserve because the quote did not complete. '+
+   quoteFailureMessage(error,net,source,target);
+}
+function walletTokenBalanceNote(symbol,reason){
+ if(reason==='rpc')return symbol+' balance or decimals could not be read via the wallet RPC. Unavailable does not mean zero.';
+ if(reason==='metadata')return symbol+' token decimals disagree with the verified token catalog; the balance was not trusted.';
+ if(reason==='contract')return symbol+' contract could not be identified on this network; the balance was not read.';
+ return '';
+}
 async function fetchLiveQuote(id){
  const selected=chain,source=pay,target=receive,addr=account,currentWallet=wallet;
  const valid=()=>quoteIsCurrent(id,selected.id,addr,source,target)&&wallet===currentWallet;
@@ -881,8 +907,8 @@ async function fetchLiveQuote(id){
    let result;
    try{result=await response.json()}catch(_){throw new Error('LI.FI returned a non-JSON response.');}
    if(!response.ok){
-     if(response.status===429)throw new Error('LI.FI rate limit reached. Wait and try again later.');
-     if(response.status===404||result?.code===1002)throw new Error('No live LI.FI quote for this pair and amount. Try another amount or token.');
+     if(response.status===429){const err=new Error('LI.FI rate limit reached.');err.quoteKind='rate-limit';throw err;}
+     if(response.status===404||result?.code===1002){const err=new Error('No LI.FI quote for this pair and amount.');err.quoteKind='no-route';throw err;}
      throw new Error((typeof result?.message==='string'&&result.message.slice(0,200))||'LI.FI quote unavailable ('+response.status+').');
    }
    if(!result?.estimate||!result?.action?.toToken)throw new Error('LI.FI returned an incomplete quote.');
@@ -927,15 +953,17 @@ async function fetchLiveQuote(id){
     const tokenResolved=(!ERC20_TOKENS[selected.id]?.[target]&&
       !walletTokenFromKey(target,selected)&&target!==selected.symbol);
     $('quoteFeedback').textContent='Live LI.FI estimate received • '+new Date().toLocaleTimeString()+
-      (tokenResolved?' • '+tokenDisplay(target)+' '+toToken.slice(0,8)+'…'+toToken.slice(-4):'')+'. Read-only.';
+      (tokenResolved?' • '+tokenDisplay(target)+' '+toToken.slice(0,8)+'…'+toToken.slice(-4):'')+'. Read-only.'+
+       ($('receiveBalance').title?' '+tokenDisplay(target)+' wallet balance unavailable independently of the LI.FI quote.':'');
  }catch(e){
    if(!valid())return;
    $('receiveAmount').value='';$('quotePanel').hidden=true;
    $('economicsWarning').hidden=true;$('economicsWarning').textContent='';
    $('quoteReceiveUsd').textContent='—';$('quoteAfterGasUsd').textContent='—';
    quoteGasInfo=null;quoteReadiness=null;quoteUpdatedAt=0;refreshSpendValidation();
-   if(smartMaxState){smartMaxState=null;status('MAX could not be finalized. Try another amount or press MAX again.');}
-   $('quoteFeedback').textContent=e.name==='AbortError'?'Quote request timed out. Try again.':(e instanceof TypeError?'Could not contact LI.FI. Check your network and browser.':String(e.message||'Quote unavailable.'));
+   if(smartMaxState){smartMaxState=null;status(maxFailureMessage(e,selected,source,target));}
+    $('quoteFeedback').textContent=quoteFailureMessage(e,selected,source,target)+
+      ($('receiveBalance').title?' Separately: '+$('receiveBalance').title:'');
  }finally{
    clearTimeout(timeout);
    if(quoteAbort===controller)quoteAbort=null;
@@ -1137,10 +1165,10 @@ async function readOneToken(symbol, id, targetChain, targetAccount, targetWallet
   let address;
   const targetNet=chain;
   try{address=await resolveQuoteTokenAddress(targetNet,symbol)}
-  catch(_){return valid()?{text:'Balance: token not identified',raw:null,decimals:null}:null}
+  catch(_){return valid()?{text:'Balance: token not identified',raw:null,decimals:null,issue:'contract'}:null}
   if(!valid())return null;
   if(!address||!/^0x[a-fA-F0-9]{40}$/.test(address))
-    return {text:'Balance: token not identified',raw:null,decimals:null};
+    return {text:'Balance: token not identified',raw:null,decimals:null,issue:'contract'};
   try{
     const data=BALANCE_OF_SELECTOR+targetAccount.slice(2).toLowerCase().padStart(64,'0');
    const [balanceHex,decimalsHex]=await Promise.all([
@@ -1153,11 +1181,11 @@ async function readOneToken(symbol, id, targetChain, targetAccount, targetWallet
     const cached=resolvedTokenCatalog.get(tokenCatalogKey(targetNet,symbol));
     // Do not trust catalog decimals if the ERC-20 contract itself reports otherwise.
     if(cached?.address?.toLowerCase()===address.toLowerCase()&&cached.decimals!==decimals)
-      return {text:'Balance: metadata mismatch',raw:null,decimals:null};
+      return {text:'Balance: metadata mismatch',raw:null,decimals:null,issue:'metadata'};
     return {text:'Balance: '+formatUnits(balanceHex,decimals),raw:BigInt(balanceHex),decimals};
  }catch(e){
-   return valid()?{text:'Balance: unavailable',raw:null,decimals:null}:null;
- }
+   return valid()?{text:'Balance: unavailable',raw:null,decimals:null,issue:'rpc'}:null;
+  }
 }
 async function readNativeBalance(){
  if(!wallet||!account)return;
@@ -1170,8 +1198,8 @@ async function readNativeBalance(){
    nativeWei=null;refreshWalletHeader();
    status(chain.name+' wallet integration is planned for a later phase.');return;
  }
- $('payBalance').textContent='Balance: loading…';
- $('receiveBalance').textContent='Balance: loading…';
+ $('payBalance').textContent='Balance: loading…';$('payBalance').title='';
+   $('receiveBalance').textContent='Balance: loading…';$('receiveBalance').title='';
  const targetPay=pay,targetReceive=receive;
  try{
    const walletChainId=parseInt(await targetWallet.request({method:'eth_chainId'}),16);
@@ -1197,7 +1225,9 @@ async function readNativeBalance(){
    ]);
    if(!valid())return;
    $('payBalance').textContent=payText?.text||'Balance: unavailable';
-   $('receiveBalance').textContent=receiveText?.text||'Balance: unavailable';
+    $('receiveBalance').textContent=receiveText?.text||'Balance: unavailable';
+    $('payBalance').title=walletTokenBalanceNote(tokenDisplay(targetPay),payText?.issue);
+    $('receiveBalance').title=walletTokenBalanceNote(tokenDisplay(targetReceive),receiveText?.issue);
    payBalanceInfo=payText?.raw!==null&&payText?.raw!==undefined?{raw:payText.raw,decimals:payText.decimals,chainId:targetChain,account:targetAccount,symbol:targetPay}:null;
    balanceUpdatedAt=payBalanceInfo?Date.now():0;
    refreshSpendValidation();
@@ -1208,9 +1238,9 @@ async function readNativeBalance(){
  }catch(e){
    if(id!==balanceRequestId||account!==targetAccount||chain.id!==targetChain||wallet!==targetWallet)return;
    nativeWei=null;refreshWalletHeader();
-   $('payBalance').textContent='Balance: unavailable';
-   $('receiveBalance').textContent='Balance: unavailable';
-   payBalanceInfo=null;balanceUpdatedAt=0;refreshSpendValidation();
+   $('payBalance').textContent='Balance: unavailable';$('payBalance').title='Wallet or network RPC balance request failed.';
+    $('receiveBalance').textContent='Balance: unavailable';$('receiveBalance').title='Wallet or network RPC balance request failed.';
+    payBalanceInfo=null;balanceUpdatedAt=0;refreshSpendValidation();
    status('Could not read balances. Check your wallet network or try Refresh.');
  }
 }
@@ -1228,6 +1258,7 @@ updatePayAmountDisplay();
 </script>
 </body>
 </html>
+
 
 
 
