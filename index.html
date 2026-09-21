@@ -38,6 +38,29 @@ main{width:min(1120px,calc(100% - 32px));margin:48px auto 64px;display:grid;grid
 .option[hidden],.token-picker-heading[hidden],.token-picker-note[hidden]{display:none}
 footer{margin:28px auto;text-align:center;color:#7e8db5;font-size:12px;padding:0 20px}
 @media (max-width:930px){main{grid-template-columns:1fr;gap:26px}.headline{order:2}.swap{order:1}}@media (max-width:540px){header{padding-inline:16px}.brand strong{font-size:18px}.connect{padding:10px 14px}.swap{padding:16px;border-radius:24px}.field{padding:12px}.row.mobile-stack{align-items:stretch;flex-direction:column}.coin-select{width:100%;min-width:0}.coin-logo{width:40px;height:40px}}
+
+/* V13.12: vivid blue/purple polish. Maintain the existing responsive layout and logo artwork. */
+:root{--purple:#a76bff;--blue:#28bfff;--yellow:#ffe56c;--muted:#c4cef2;--line:#737fe0}
+body{background:radial-gradient(ellipse 75% 55% at 9% 6%,#4430bc77,transparent 72%),radial-gradient(ellipse 73% 60% at 92% 87%,#0669ec55,transparent 75%),#09132d}
+header{background:#101b3be8;border-bottom-color:#675def88}
+.swap{border:1px solid #9782ff;background:linear-gradient(156deg,#252655fa,#0e2244f8 78%);box-shadow:0 28px 75px #0008,0 0 25px #7454ff35,0 0 0 2px #665bfb18}
+.connect{background:linear-gradient(110deg,#fff18b,#ffd22f);border-color:#fff1a4;box-shadow:0 0 19px #ffdc5280,0 4px 18px #0003}
+.network-button{border-color:#8e83fa;background:linear-gradient(110deg,#283063,#23265b);box-shadow:inset 0 0 0 1px #ffffff12,0 0 12px #5666ff26}
+.field{border-color:#6575b4;background:#182346;box-shadow:inset 0 0 0 1px #9baaff10}
+.coin-select{border-color:#8f9bf0;background:linear-gradient(105deg,#334279,#2a3469);box-shadow:0 0 15px #5b71f232}
+.coin-logo{border-color:#e4e9ff90;filter:saturate(1.22) contrast(1.07);box-shadow:0 0 0 1px #ffffff2c,0 0 14px #6b9dff55}
+.network-logo{border-color:#d4e5ff95;box-shadow:0 0 12px #699cff5e}
+.badge-logo{border-color:#ffe77c;box-shadow:0 0 0 1px #ffe06a85,0 0 8px #796cff88}
+.brand-mark,.apxn-logo{filter:none} /* Preserve APXN logo colors. */
+.reverse{background:#293266;border-color:#ffe77b;box-shadow:0 0 13px #ffe77b66}
+.fee strong,.wallet-details strong{color:#ffeb87;text-shadow:0 0 10px #ffd75038}
+.spend-warning.good{border-color:#54b88e;background:#113a3e;color:#d7ffec;box-shadow:0 0 13px #35d4971c}
+.quote-panel{border-color:#9e88fc;background:linear-gradient(160deg,#15254b,#12213e);box-shadow:0 0 18px #7558ff27}
+.swap-action{background:linear-gradient(100deg,#ffed78,#fbc739);border-color:#fff0a6;box-shadow:0 0 18px #ffd95560}
+.option{border-color:#6675ba;background:#2a3569}.option:not(:disabled):active,.coin-select:active,.network-button:active{border-color:#ffdf71}
+.max-button{border-color:#ffe27a;background:#554164;color:#fff0a0}
+.coin-meta small{white-space:normal;overflow-wrap:anywhere}
+@media (prefers-reduced-motion:reduce){.swap,.coin-select,.network-button,.quote-panel,.coin-logo{transition:none}}
 </style>
 </head>
 <body>
@@ -222,6 +245,10 @@ function tokenDisplay(key){
  const item=walletTokenFromKey(key);
  return item?String(item.symbol||'Unknown token').slice(0,36):String(key);
 }
+// V13.12: network-aware explanatory copy. Does not establish token safety or price.
+function tokenIdentityLabel(net,key){
+  return Number(net?.id)===56&&(key==='USDT'||key==='USDC')?' • Binance-Peg':'';
+}
 function tokenIconForSelection(key){
   // Known logos are matched by exact chain + contract, not by untrusted symbol alone.
   const owned=walletTokenFromKey(key);
@@ -256,7 +283,7 @@ function setTokenView(prefix, symbol){
  else setImg($(prefix+'Icon'),tokenIconForSelection(symbol),tokenDisplay(symbol),'#2f4ca0');
  setImg($(prefix+'Badge'), networkIconUrl(chain), chain.symbol || chain.name.slice(0,2), '#0f1634');
   $(prefix+'Symbol').textContent=tokenDisplay(symbol);
- $(prefix+'NetworkTag').textContent=chain.name;
+ $(prefix+'NetworkTag').textContent=chain.name+tokenIdentityLabel(chain,symbol);
   $(prefix+'Icon').alt=tokenDisplay(symbol);
  $(prefix+'Badge').alt=chain.name;
 }
@@ -315,7 +342,7 @@ function walletPickerItems(which){
    const locked=label.toUpperCase()==='APXN';
    const selectable=!locked&&!!net&&!!officialKey&&!!account;
    const meta=item.native?'Native coin':item.contract.slice(0,8)+'…'+item.contract.slice(-6);
-   const description=(net?net.name:'EVM chain '+item.chainId)+' • '+meta+
+   const description=(net?net.name:'EVM chain '+item.chainId)+ (pinned?tokenIdentityLabel(net,label):'')+' • '+meta+
      ' • Balance: '+assetLabel(item.raw,item.decimals);
    return {label,description,contract:item.contract,icon:pinned&&net?tokenIconUrl(label,net):(item.logo||null),
      badge:net?networkIconUrl(net):null,walletEntry:true,
@@ -343,7 +370,7 @@ function walletPickerItems(which){
  }).filter(Boolean));
  for(const t of chain.tokens){
    if(shown.has(t))continue;
-   items.push({label:t,description:'On '+chain.name+
+   items.push({label:t,description:'On '+chain.name+tokenIdentityLabel(chain,t)+
       (getQuoteTokenAddress(chain,t)?'':' • LI.FI token contract checked on selection'),
       icon:tokenIconUrl(t,chain),badge:networkIconUrl(chain),
      end:t===other?'Selected':'',disabled:t===other,select:()=>{
@@ -675,6 +702,36 @@ async function resolveQuoteTokenAddress(net,symbol,signal){
   resolvedTokenCatalog.set(key,{address,decimals:dec,until:Date.now()+TOKEN_CATALOG_CACHE_MS});
   return address;
 }
+// V13.12: token identity = network + exact contract + on-chain decimals.
+// Logos, symbols, indexer metadata and LI.FI token metadata are NOT proof of safety.
+async function verifySelectedTokenDecimals(currentWallet,net,key,address){
+  if(key===net.symbol){
+    if(normalizedQuoteToken(address)!==NATIVE_TOKEN)throw new Error('Native token address does not match this network.');
+    return 18;
+  }
+  if(!/^0x[0-9a-f]{40}$/i.test(String(address))||
+      address.toLowerCase()===NATIVE_TOKEN||
+      address.toLowerCase()==='0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee')
+    throw new Error('Selected ERC-20 contract address is invalid.');
+  let hex;
+  try{hex=await currentWallet.request({method:'eth_call',params:[{to:address,data:DECIMALS_SELECTOR},'latest']});}
+  catch(_){throw new Error('Cannot verify '+tokenDisplay(key)+' decimals through the wallet RPC.');}
+  if(typeof hex!=='string'||!/^0x[0-9a-f]{1,64}$/i.test(hex))
+    throw new Error('Wallet returned invalid token decimals.');
+  const decimals=Number(BigInt(hex));
+  if(!Number.isInteger(decimals)||decimals<0||decimals>36)
+    throw new Error('Token decimals are outside the supported range.');
+  const pinned=ERC20_TOKENS[net.id]?.[key];
+  if(pinned&&pinned.toLowerCase()!==address.toLowerCase())
+    throw new Error('Selected token differs from the pinned network contract.');
+  const indexed=walletTokenFromKey(key,net);
+  if(indexed&&(!Number.isInteger(Number(indexed.decimals))||Number(indexed.decimals)!==decimals))
+    throw new Error('Wallet token decimals disagree with the contract.');
+  const catalog=resolvedTokenCatalog.get(tokenCatalogKey(net,key));
+  if(catalog?.address?.toLowerCase()===address.toLowerCase()&&catalog.decimals!==decimals)
+    throw new Error('LI.FI token metadata disagrees with the wallet contract.');
+  return decimals;
+}
 function quoteIsCurrent(id,netId,addr,source,target){
  return id===quoteRequestId && account===addr && chain.id===netId && liveChainId===netId && pay===source && receive===target;
 }
@@ -685,7 +742,7 @@ function normalizedQuoteToken(address){
  if(value==='0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee')return NATIVE_TOKEN;
  return /^0x[0-9a-f]{40}$/.test(value)?value:null;
 }
-function verifyReadOnlyQuote(result,net,fromToken,toToken,fromAmount,fromDecimals,recipient){
+function verifyReadOnlyQuote(result,net,fromToken,toToken,fromAmount,fromDecimals,recipient,toDecimals){
  const action=result?.action,estimate=result?.estimate;
  if(!action||!estimate)throw new Error('LI.FI quote is incomplete.');
  const from=action.fromToken,to=action.toToken;
@@ -693,7 +750,7 @@ function verifyReadOnlyQuote(result,net,fromToken,toToken,fromAmount,fromDecimal
     Number(from?.chainId)!==net.id||Number(to?.chainId)!==net.id||
     normalizedQuoteToken(from?.address)!==fromToken.toLowerCase()||
     normalizedQuoteToken(to?.address)!==toToken.toLowerCase()||
-    Number(from?.decimals)!==fromDecimals)
+    Number(from?.decimals)!==fromDecimals||Number(to?.decimals)!==toDecimals)
    throw new Error('LI.FI quote token, decimals or network does not match your selection.');
  if(String(action.fromAmount)!==fromAmount||
     (estimate.fromAmount!=null&&String(estimate.fromAmount)!==fromAmount)||
@@ -893,7 +950,7 @@ function maxFailureMessage(error){
 }
 function walletTokenBalanceNote(symbol,reason){
  if(reason==='rpc')return symbol+' balance or decimals could not be read via the wallet RPC. Unavailable does not mean zero.';
- if(reason==='metadata')return symbol+' token decimals disagree with the verified token catalog; the balance was not trusted.';
+ if(reason==='metadata')return symbol+' token decimals disagree with on-chain contract metadata; balance not trusted.';
  if(reason==='contract')return symbol+' contract could not be identified on this network; the balance was not read.';
  return '';
 }
@@ -914,14 +971,13 @@ async function fetchLiveQuote(id){
     ]);
     if(!valid())return;
     if(!fromToken||!toToken)throw new Error('Token contract is unavailable for '+selected.name+'.');
-    let decimals=18;
-   if(source!==selected.symbol){
-     const hex=await currentWallet.request({method:'eth_call',params:[{to:fromToken,data:DECIMALS_SELECTOR},'latest']});
-     if(!valid())return;
-     if(!/^0x[0-9a-f]+$/i.test(hex))throw new Error('Could not read source token decimals.');
-     decimals=Number(BigInt(hex));
-   }
-   const fromAmount=parseDecimalUnits($('payAmount').value,decimals);
+    // Both token contracts must agree with live wallet decimals before requesting a quote.
+    const [decimals,toDecimals]=await Promise.all([
+      verifySelectedTokenDecimals(currentWallet,selected,source,fromToken),
+      verifySelectedTokenDecimals(currentWallet,selected,target,toToken)
+    ]);
+    if(!valid())return;
+    const fromAmount=parseDecimalUnits($('payAmount').value,decimals);
    if(!valid())return;
    const params=new URLSearchParams({
      fromChain:String(selected.id),toChain:String(selected.id),fromToken,toToken,
@@ -940,7 +996,7 @@ async function fetchLiveQuote(id){
    if(!result?.estimate||!result?.action?.toToken)throw new Error('LI.FI returned an incomplete quote.');
    if(Number(result.action.fromChainId)!==selected.id||Number(result.action.toChainId)!==selected.id)
      throw new Error('LI.FI returned a quote for a different network.');
-   const checked=verifyReadOnlyQuote(result,selected,fromToken,toToken,fromAmount,decimals,addr);
+   const checked=verifyReadOnlyQuote(result,selected,fromToken,toToken,fromAmount,decimals,addr,toDecimals);
    // Before showing green, independently verify the live account/chain even if wallet events were missed.
    const safety=await readWalletSafetyContext(currentWallet,addr,selected.id);
    if(!valid())return;
@@ -1207,6 +1263,11 @@ async function readOneToken(symbol, id, targetChain, targetAccount, targetWallet
    if(!valid())return null;
    if(!/^0x[0-9a-f]+$/i.test(balanceHex)||!/^0x[0-9a-f]+$/i.test(decimalsHex))throw new Error('Invalid contract response');
     const decimals=Number(BigInt(decimalsHex));
+    if(!Number.isInteger(decimals)||decimals<0||decimals>36)
+      return {text:'Balance: metadata mismatch',raw:null,decimals:null,issue:'metadata'};
+    const indexed=walletTokenFromKey(symbol,targetNet);
+    if(indexed&&Number(indexed.decimals)!==decimals)
+      return {text:'Balance: metadata mismatch',raw:null,decimals:null,issue:'metadata'};
     const cached=resolvedTokenCatalog.get(tokenCatalogKey(targetNet,symbol));
     // Do not trust catalog decimals if the ERC-20 contract itself reports otherwise.
     if(cached?.address?.toLowerCase()===address.toLowerCase()&&cached.decimals!==decimals)
