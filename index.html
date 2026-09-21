@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -39,28 +40,37 @@ main{width:min(1120px,calc(100% - 32px));margin:48px auto 64px;display:grid;grid
 footer{margin:28px auto;text-align:center;color:#7e8db5;font-size:12px;padding:0 20px}
 @media (max-width:930px){main{grid-template-columns:1fr;gap:26px}.headline{order:2}.swap{order:1}}@media (max-width:540px){header{padding-inline:16px}.brand strong{font-size:18px}.connect{padding:10px 14px}.swap{padding:16px;border-radius:24px}.field{padding:12px}.row.mobile-stack{align-items:stretch;flex-direction:column}.coin-select{width:100%;min-width:0}.coin-logo{width:40px;height:40px}}
 
-/* V13.12: vivid blue/purple polish. Maintain the existing responsive layout and logo artwork. */
-:root{--purple:#a76bff;--blue:#28bfff;--yellow:#ffe56c;--muted:#c4cef2;--line:#737fe0}
-body{background:radial-gradient(ellipse 75% 55% at 9% 6%,#4430bc77,transparent 72%),radial-gradient(ellipse 73% 60% at 92% 87%,#0669ec55,transparent 75%),#09132d}
-header{background:#101b3be8;border-bottom-color:#675def88}
-.swap{border:1px solid #9782ff;background:linear-gradient(156deg,#252655fa,#0e2244f8 78%);box-shadow:0 28px 75px #0008,0 0 25px #7454ff35,0 0 0 2px #665bfb18}
-.connect{background:linear-gradient(110deg,#fff18b,#ffd22f);border-color:#fff1a4;box-shadow:0 0 19px #ffdc5280,0 4px 18px #0003}
-.network-button{border-color:#8e83fa;background:linear-gradient(110deg,#283063,#23265b);box-shadow:inset 0 0 0 1px #ffffff12,0 0 12px #5666ff26}
-.field{border-color:#6575b4;background:#182346;box-shadow:inset 0 0 0 1px #9baaff10}
-.coin-select{border-color:#8f9bf0;background:linear-gradient(105deg,#334279,#2a3469);box-shadow:0 0 15px #5b71f232}
-.coin-logo{border-color:#e4e9ff90;filter:saturate(1.22) contrast(1.07);box-shadow:0 0 0 1px #ffffff2c,0 0 14px #6b9dff55}
-.network-logo{border-color:#d4e5ff95;box-shadow:0 0 12px #699cff5e}
-.badge-logo{border-color:#ffe77c;box-shadow:0 0 0 1px #ffe06a85,0 0 8px #796cff88}
+/* V13.13: brighter neon palette. Stronger luminous yellow and more vivid blue/purple while preserving layout and existing logic. */
+:root{--purple:#b98cff;--blue:#45d7ff;--yellow:#fff36b;--muted:#d6e0ff;--line:#8d9aff}
+body{background:radial-gradient(ellipse 78% 58% at 10% 7%,#5f3bff80,transparent 72%),radial-gradient(ellipse 74% 62% at 92% 88%,#00a6ff66,transparent 75%),linear-gradient(180deg,#09122d 0%,#081022 100%)}
+header{background:#111d42ee;border-bottom-color:#7c70ff99;box-shadow:0 0 22px #3f59ff22}
+.pill{background:linear-gradient(135deg,#27336c,#202957);border-color:#8f9dff;color:#eef3ff;box-shadow:0 0 12px #5d72ff22}
+.headline h1 span{text-shadow:0 0 18px #6ed4ff44,0 0 24px #b88cff33}
+.dot{background:var(--yellow);box-shadow:0 0 14px #fff07fcc,0 0 24px #ffe10066}
+.apxn-card{background:linear-gradient(145deg,#151e40,#13224a);border-color:#657cf2;box-shadow:0 0 18px #4a66ff22}
+.lock{color:#fff7a8;background:#5a4720;box-shadow:0 0 12px #ffe56b33}
+.swap{border:1px solid #a08fff;background:linear-gradient(156deg,#272961fc,#0e2347fb 78%);box-shadow:0 28px 75px #0008,0 0 32px #7b5cff42,0 0 18px #24baff20,0 0 0 2px #6f63ff20}
+.connect{background:linear-gradient(110deg,#fff9a6 0%,#fff06b 38%,#ffd91f 100%);border-color:#fff8c2;color:#201532;box-shadow:0 0 14px #fff07fcc,0 0 28px #ffe11a99,0 6px 18px #0003}
+.network-button{border-color:#9a90ff;background:linear-gradient(110deg,#2b3472,#232a61);box-shadow:inset 0 0 0 1px #ffffff18,0 0 16px #6076ff2f}
+.field{border-color:#7486cd;background:linear-gradient(180deg,#19264b,#142042);box-shadow:inset 0 0 0 1px #aab7ff12,0 0 14px #395cff12}
+.coin-select{border-color:#9ba7ff;background:linear-gradient(105deg,#35478a,#2b3770);box-shadow:0 0 18px #6981ff33,inset 0 0 0 1px #ffffff14}
+.coin-logo{border-color:#eef3ffa8;filter:saturate(1.35) brightness(1.08) contrast(1.08);box-shadow:0 0 0 1px #ffffff3d,0 0 18px #69a8ff66,0 0 26px #7f5fff22}
+.network-logo{border-color:#e0ecffb8;box-shadow:0 0 15px #6faeff77}
+.badge-logo{border-color:#fff089;box-shadow:0 0 0 1px #ffeb7aa5,0 0 10px #9f8cff88,0 0 16px #ffe14a44}
 .brand-mark,.apxn-logo{filter:none} /* Preserve APXN logo colors. */
-.reverse{background:#293266;border-color:#ffe77b;box-shadow:0 0 13px #ffe77b66}
-.fee strong,.wallet-details strong{color:#ffeb87;text-shadow:0 0 10px #ffd75038}
-.spend-warning.good{border-color:#54b88e;background:#113a3e;color:#d7ffec;box-shadow:0 0 13px #35d4971c}
-.quote-panel{border-color:#9e88fc;background:linear-gradient(160deg,#15254b,#12213e);box-shadow:0 0 18px #7558ff27}
-.swap-action{background:linear-gradient(100deg,#ffed78,#fbc739);border-color:#fff0a6;box-shadow:0 0 18px #ffd95560}
-.option{border-color:#6675ba;background:#2a3569}.option:not(:disabled):active,.coin-select:active,.network-button:active{border-color:#ffdf71}
-.max-button{border-color:#ffe27a;background:#554164;color:#fff0a0}
+.reverse{background:#2a3674;border-color:#fff08a;box-shadow:0 0 16px #fff08aaa,0 0 24px #ffe14a44}
+.fee strong,.wallet-details strong,.headline .eyebrow,.chev{color:#fff085;text-shadow:0 0 10px #ffe14a66,0 0 18px #fff07f33}
+.notice{border-color:#6477c8;background:linear-gradient(180deg,#1c2b57,#162346);box-shadow:0 0 14px #5b75ff1e}
+.spend-warning{border-color:#b98556;background:linear-gradient(180deg,#432f33,#362631);color:#ffe8bf;box-shadow:0 0 14px #ffbf6a18}
+.spend-warning.good{border-color:#5ed7a6;background:#113b3c;color:#dbfff0;box-shadow:0 0 16px #39e0a72a}
+.quote-panel{border-color:#ab97ff;background:linear-gradient(160deg,#162852,#132242);box-shadow:0 0 22px #7a5dff2e,0 0 12px #2dbbff16}
+.quote-panel .row:first-child strong,.quote-feedback,.status{color:#fff18a;text-shadow:0 0 8px #ffe14a33}
+.swap-action{background:linear-gradient(100deg,#fff59d 0%,#fff06b 30%,#ffd82a 100%);border-color:#fff7bf;box-shadow:0 0 18px #fff07faa,0 0 34px #ffd91f77;color:#21183b}
+.option{border-color:#7082d2;background:linear-gradient(180deg,#2d3972,#283466);box-shadow:0 0 12px #6076ff18}.option:not(:disabled):active,.coin-select:active,.network-button:active{border-color:#fff07d;box-shadow:0 0 18px #ffe85d55}
+.max-button{border-color:#fff089;background:linear-gradient(180deg,#624974,#523f63);color:#fff4a8;box-shadow:0 0 10px #ffe86a33}
+footer{color:#98a8dd}
 .coin-meta small{white-space:normal;overflow-wrap:anywhere}
-@media (prefers-reduced-motion:reduce){.swap,.coin-select,.network-button,.quote-panel,.coin-logo{transition:none}}
+@media (prefers-reduced-motion:reduce){.swap,.coin-select,.network-button,.quote-panel,.coin-logo,.connect,.swap-action{transition:none}}
 </style>
 </head>
 <body>
@@ -1348,6 +1358,8 @@ updatePayAmountDisplay();
 </script>
 </body>
 </html>
+
+
 
 
 
