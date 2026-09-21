@@ -13,7 +13,7 @@ button,input{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allow
 header{min-height:78px;border-bottom:1px solid #5663a035;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px max(22px,calc((100vw - 1120px)/2));background:#0e152ac9}
 main{width:min(1120px,calc(100% - 32px));margin:48px auto 64px;display:grid;grid-template-columns:minmax(0,.9fr) minmax(350px,1.1fr);gap:46px;align-items:center}
 .brand{display:flex;gap:12px;align-items:center;text-decoration:none;color:inherit}.brand-mark,.apxn-logo{background:#050b1d;border-radius:50%;object-fit:contain;border:2px solid #6aa0ff75}.brand-mark{width:50px;height:50px}.brand strong{display:block;font-size:22px;letter-spacing:.14em}.brand small{display:block;color:#b3bdff;letter-spacing:.17em;font-size:10px}
-.header-actions{display:flex;gap:10px;align-items:center}.pill{padding:10px 14px;border:1px solid #7066b2;border-radius:15px;background:#24264e;color:#f8f9ff;font-size:13px}.connect{border:2px solid #fff1a2;background:linear-gradient(125deg,#ffe66c,#ffcd36);color:#1b1740;box-shadow:0 0 23px #fbd35640;padding:11px 18px;border-radius:15px;font-weight:800;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.header-actions{display:flex;gap:10px;align-items:center}.connect{border:2px solid #fff1a2;background:linear-gradient(125deg,#ffe66c,#ffcd36);color:#1b1740;box-shadow:0 0 23px #fbd35640;padding:11px 18px;border-radius:15px;font-weight:800;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .headline .eyebrow{color:var(--yellow);text-transform:uppercase;letter-spacing:.2em;font-size:12px;font-weight:800}.headline h1{font-size:clamp(38px,5vw,66px);letter-spacing:-.05em;line-height:1.04;margin:18px 0}.headline h1 span{background:linear-gradient(95deg,#62c8ff,#b992ff);background-clip:text;-webkit-background-clip:text;color:transparent}.headline p{color:#bfcae6;font-size:17px;line-height:1.7;max-width:430px}.feature{display:flex;gap:11px;align-items:center;padding:12px 0;color:#d9ddff;font-size:14px}.dot{width:9px;height:9px;background:var(--yellow);border-radius:50%;box-shadow:0 0 12px #ffdf7b9c}
 .apxn-card{display:flex;align-items:center;gap:12px;max-width:410px;background:#141b36;border:1px solid #3b456e;border-radius:19px;padding:12px 15px;margin-top:25px}.apxn-logo{width:43px;height:43px}.apxn-card strong{display:block}.apxn-card small{color:var(--muted)}.lock{margin-left:auto;color:#ffe078;background:#4e4027;border-radius:99px;padding:7px 9px;font-size:11px;font-weight:800;white-space:nowrap}
 .swap{border:1px solid #6b75b4;background:linear-gradient(160deg,#222249ef,#101b34f7 70%);border-radius:30px;padding:25px;box-shadow:0 28px 80px #0009,0 0 0 5px #7f6bf009}.swap h2{font-size:25px;margin:0 0 5px}.sub{color:var(--muted);margin:0 0 20px;font-size:13px}
@@ -46,7 +46,7 @@ footer{margin:28px auto;text-align:center;color:#7e8db5;font-size:12px;padding:0
 :root{--purple:#a071ff;--blue:#318cff;--yellow:#ffcc31;--muted:#cbd8f3;--line:#6278bf}
 body{background:radial-gradient(ellipse 66% 50% at 10% 6%,#472c984d,transparent 75%),radial-gradient(ellipse 64% 48% at 93% 87%,#104fab4f,transparent 76%),linear-gradient(180deg,#0e1120 0%,#10182f 100%)}
 header{background:#101629f0;border-bottom-color:#5567b458;box-shadow:0 8px 24px #02061166}
-.pill{background:linear-gradient(180deg,#29375e,#1b2748);border-color:#6e83e0;color:#f5f6ff}
+
 .headline h1 span{background:linear-gradient(95deg,#3ea4ff,#a177ff);background-clip:text;-webkit-background-clip:text;color:transparent;text-shadow:none}
 .dot{background:#ffcb2e;box-shadow:0 0 9px #ffa91a77}
 .apxn-card{background:linear-gradient(145deg,#161e3b,#172449);border-color:#5c71be;box-shadow:0 7px 22px #0107173d}
@@ -80,6 +80,36 @@ header{background:#101629f0;border-bottom-color:#5567b458;box-shadow:0 8px 24px 
 footer{color:#a9b9df}
 .coin-meta small{white-space:normal;overflow-wrap:anywhere}
 @media (prefers-reduced-motion:reduce){.swap,.coin-select,.network-button,.quote-panel,.coin-logo,.connect,.swap-action{transition:none}}
+
+/* V13.15: remove the unused Private Preview badge and make the existing
+   APXN brand + connected wallet button fit desktop, tablet and narrow phones.
+   This CSS changes layout only; no wallet, quote, MAX or swap logic changes. */
+header{width:100%;min-width:0;gap:clamp(8px,2vw,22px);padding-inline:max(16px,calc((100vw - 1120px)/2));}
+.brand{min-width:0;flex:0 1 auto;white-space:nowrap}
+.brand>span{min-width:0}
+.header-actions{min-width:0;flex:0 1 auto;justify-content:flex-end}
+.header-actions .connect{min-width:0;max-width:min(100%,220px);text-align:center}
+/* Prevent the single-column mobile grid from inheriting a min-content width. */
+@media (max-width:930px){main{grid-template-columns:minmax(0,1fr)}.headline,.swap{min-width:0}}
+@media (max-width:320px){.headline h1{font-size:clamp(30px,10vw,38px);overflow-wrap:anywhere}}
+@media (max-width:720px){
+ header{min-height:70px;padding:12px 16px;gap:8px}
+ .brand{gap:9px}
+ .brand-mark{width:44px;height:44px}
+ .brand strong{font-size:19px;letter-spacing:.10em}
+ .brand small{font-size:9px;letter-spacing:.14em}
+ .header-actions{max-width:min(45vw,192px)}
+ .header-actions .connect{max-width:min(42vw,190px);padding:10px 12px;font-size:clamp(12px,3.5vw,15px);border-radius:14px}
+}
+@media (max-width:380px){
+ header{padding:10px 12px;gap:6px;min-height:60px}
+ .brand{gap:7px}
+ .brand-mark{width:38px;height:38px}
+ .brand strong{font-size:16px;letter-spacing:.08em}
+ .brand small{font-size:9px;letter-spacing:.12em}
+ .header-actions{max-width:43vw}
+ .header-actions .connect{max-width:43vw;padding:9px 9px;font-size:12px;border-radius:12px}
+}
 </style>
 </head>
 <body>
@@ -88,7 +118,7 @@ footer{color:#a9b9df}
 <img class="brand-mark" src="https://apxn.network/logo2%20(1).png" alt="APXN logo">
 <span><strong>APXN</strong><small>DEX</small></span>
 </a>
-<div class="header-actions"><span class="pill">🧪 Private Preview</span><button class="connect" id="walletButton" type="button">Connect Wallet</button></div>
+<div class="header-actions"><button class="connect" id="walletButton" type="button">Connect Wallet</button></div>
 </header>
 <main>
 <section class="headline">
