@@ -186,6 +186,7 @@ let balanceUpdatedAt=0,walletSafetyCheckedAt=0,walletSafetyBusy=false;
 let payBalanceInfo=null; // Exact raw balance/decimals for current wallet, chain and pay token; never inferred from rounded UI text.
 let quoteGasInfo=null; // Gas data for the exact current LI.FI quote; never a transaction instruction.
 let quoteReadiness=null; // Exact validated quote identity; NEVER transactionRequest or signing data.
+let quoteFailureState=null; // V13.9: short failure for the exact quote; cleared on wallet/pair/amount changes.
 let smartMaxState=null; // Auto-refine native MAX only for this chain, account, token pair and exact balance.
 let walletAssets=[],walletAssetsAccount=null,walletAssetsUpdatedAt=0,walletAssetsRequestId=0;
 let walletAssetsAbort=null,walletAssetsLoading=false,walletAssetsPartial=false;
@@ -437,7 +438,8 @@ function spendCheck(){
     verified.fromToken!==getQuoteTokenAddress(chain,pay)?.toLowerCase()||
     verified.toToken!==getQuoteTokenAddress(chain,receive)?.toLowerCase()||
     verified.minRaw<=0n||verified.minRaw>verified.estimatedRaw)
-   return {message:'Waiting for a verified LI.FI preview for this wallet, pair and exact amount. Swaps remain disabled.',good:false};
+   return {message:quoteFailureState?'No verified quote available. Swaps remain disabled.':
+      'Waiting for a verified LI.FI preview for this wallet, pair and exact amount. Swaps remain disabled.',good:false};
  if(!Number.isFinite(quoteUpdatedAt)||quoteUpdatedAt<=0||Date.now()-quoteUpdatedAt>QUOTE_READINESS_MAX_AGE_MS)
    return {message:'This preview quote is old. Wait for the automatic refresh; swaps remain disabled.',good:false};
  const quoted=quoteGasInfo;
@@ -505,6 +507,7 @@ function clearQuote(message){
  $('quoteReceiveUsd').textContent='—';$('quoteAfterGasUsd').textContent='—';
  quoteGasInfo=null;
  quoteReadiness=null; // Never carry an old preview confirmation across inputs or wallet/network changes.
+  quoteFailureState=null; // A previous failure must not follow a new quote input.
  quoteUpdatedAt=0; // Once the exact request changes, the previous estimate is no longer current.
  $('quoteFeedback').textContent=message||'';
 }
@@ -847,6 +850,7 @@ function formatQuoteAmount(raw,decimals){
  return formatUnits(raw,decimals,8);
 }
 // V13.8: show separate, accurate causes for LI.FI route and wallet balance failures.
+// V13.9: concise UI without assuming liquidity or changing the selected token.
 // The server's no-route answer does not establish WHY the route was unavailable.
 function routeAlternative(net,source,target){
  return target==='USDT'&&source!=='USDC'&&net.tokens.includes('USDC')?
@@ -861,9 +865,31 @@ function quoteFailureMessage(error,net,source,target){
  if(error instanceof TypeError)return 'Could not contact LI.FI. Check your connection and try again.';
  return String(error?.message||'Quote unavailable.').slice(0,230);
 }
-function maxFailureMessage(error,net,source,target){
- return 'MAX could not finalize the native gas reserve because the quote did not complete. '+
-   quoteFailureMessage(error,net,source,target);
+// V13.9: keep V13.8's detailed diagnostic logic above, but display short,
+// non-speculative explanations to users; a LI.FI no-quote has no proven cause.
+function briefQuoteFailure(error,net,source,target){
+ if(error?.quoteKind==='no-route'){
+   const alternative=target==='USDT'&&source!=='USDC'&&net.tokens.includes('USDC');
+   return 'No LI.FI quote for '+tokenDisplay(source)+' → '+tokenDisplay(target)+
+     ' on '+net.name+' at this amount. '+(alternative?'Try USDC or another amount.':'Try another amount or token.');
+ }
+ if(error?.quoteKind==='rate-limit')return 'LI.FI rate limit reached. Try again later.';
+ if(error?.name==='AbortError')return 'LI.FI quote timed out. Try again.';
+ if(error instanceof TypeError)return 'Cannot reach LI.FI. Check your connection.';
+ return String(error?.message||'Quote unavailable.').slice(0,130);
+}
+function briefWalletBalanceIssue(element,symbol){
+ const details=String(element?.title||'');
+ if(!details)return '';
+ if(details.includes('decimals disagree'))return symbol+' decimals could not be verified.';
+ if(details.includes('contract could not'))return symbol+' contract not identified.';
+ return symbol+' balance unavailable via wallet RPC (not necessarily zero).';
+}
+function maxFailureMessage(error){
+ if(error?.quoteKind==='no-route')return 'MAX not finalized: no LI.FI quote for gas estimation.';
+ if(error?.quoteKind==='rate-limit')return 'MAX not finalized: LI.FI rate limit.';
+ if(error?.name==='AbortError')return 'MAX not finalized: LI.FI quote timed out.';
+ return 'MAX not finalized: verified gas estimate unavailable.';
 }
 function walletTokenBalanceNote(symbol,reason){
  if(reason==='rpc')return symbol+' balance or decimals could not be read via the wallet RPC. Unavailable does not mean zero.';
@@ -949,21 +975,24 @@ async function fetchLiveQuote(id){
    quoteReadiness={requestId:id,chainId:selected.id,account:addr,wallet:currentWallet,
      source,target,fromToken:fromToken.toLowerCase(),toToken:toToken.toLowerCase(),
      rawAmount:fromAmount,minRaw:BigInt(checked.minimum),estimatedRaw:BigInt(checked.estimated)};
+   quoteFailureState=null;
    refreshSpendValidation();
     const tokenResolved=(!ERC20_TOKENS[selected.id]?.[target]&&
       !walletTokenFromKey(target,selected)&&target!==selected.symbol);
     $('quoteFeedback').textContent='Live LI.FI estimate received • '+new Date().toLocaleTimeString()+
       (tokenResolved?' • '+tokenDisplay(target)+' '+toToken.slice(0,8)+'…'+toToken.slice(-4):'')+'. Read-only.'+
-       ($('receiveBalance').title?' '+tokenDisplay(target)+' wallet balance unavailable independently of the LI.FI quote.':'');
+       ($('receiveBalance').title?' • '+briefWalletBalanceIssue($('receiveBalance'),tokenDisplay(target)):'');
  }catch(e){
    if(!valid())return;
    $('receiveAmount').value='';$('quotePanel').hidden=true;
    $('economicsWarning').hidden=true;$('economicsWarning').textContent='';
    $('quoteReceiveUsd').textContent='—';$('quoteAfterGasUsd').textContent='—';
-   quoteGasInfo=null;quoteReadiness=null;quoteUpdatedAt=0;refreshSpendValidation();
-   if(smartMaxState){smartMaxState=null;status(maxFailureMessage(e,selected,source,target));}
-    $('quoteFeedback').textContent=quoteFailureMessage(e,selected,source,target)+
-      ($('receiveBalance').title?' Separately: '+$('receiveBalance').title:'');
+   quoteGasInfo=null;quoteReadiness=null;quoteUpdatedAt=0;
+   quoteFailureState=briefQuoteFailure(e,selected,source,target);
+   refreshSpendValidation();
+   if(smartMaxState){smartMaxState=null;status(maxFailureMessage(e));}
+   const separateBalance=briefWalletBalanceIssue($('receiveBalance'),tokenDisplay(target));
+   $('quoteFeedback').textContent=quoteFailureState+(separateBalance?' '+separateBalance:'');
  }finally{
    clearTimeout(timeout);
    if(quoteAbort===controller)quoteAbort=null;
